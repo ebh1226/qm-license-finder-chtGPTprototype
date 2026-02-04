@@ -1,0 +1,196 @@
+// QM License Finder Prototype v0.1
+// Prisma schema (SQLite) - forward compatible with future Postgres.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum CandidateProvenance {
+  generated
+  uploaded
+  manual
+}
+
+enum Tier {
+  A
+  B
+  C
+}
+
+enum Confidence {
+  High
+  Medium
+}
+
+enum OutcomeType {
+  status_change
+  note
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects Project[]
+}
+
+model Project {
+  id                      String   @id @default(cuid())
+  ownerId                 String
+  owner                   User     @relation(fields: [ownerId], references: [id])
+
+  // Intake fields (never store client name/deal terms)
+  name                    String
+  brandCategory            String?  // e.g., "premium outdoor lifestyle"
+  productTypeSought        String?  // e.g., "drinkware, coolers, outdoor entertaining"
+  priceRange               String?  // e.g., "$40-$150"
+  distributionPreference   String?  // e.g., "REI + independent outdoor retailers + upscale boutiques"
+  geography                String?
+  positioningKeywords      String?  // comma-separated (v0.1)
+  constraints              String?
+  excludeList              String?  // one per line
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  candidates Candidate[]
+  feedback  ProjectFeedback?
+}
+
+model Candidate {
+  id          String               @id @default(cuid())
+  projectId   String
+  project     Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name        String
+  website     String?
+  notes       String?
+  provenance  CandidateProvenance  @default(manual)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  evidenceLinks EvidenceLink[]
+  scoreCard     ScoreCard?
+  outreachDraft OutreachDraft?
+  outcomeEvents OutcomeEvent[]
+  feedback      CandidateFeedback?
+
+  @@index([projectId])
+}
+
+model EvidenceLink {
+  id          String   @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  url         String
+  // Optional user-pasted excerpt if fetch fails or user wants to constrain the context.
+  excerpt     String?
+
+  // Best-effort fetched text snapshot (public URLs only). Keep short.
+  fetchedText String?
+
+  // Summary bullets as JSON string: [{text, supportType}]
+  summaryJson String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([candidateId])
+}
+
+model ScoreCard {
+  id              String     @id @default(cuid())
+  candidateId     String     @unique
+  candidate       Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  // Snapshot of weights used when scoring.
+  weightsJson     String
+  // Criterion scores & notes.
+  criteriaJson    String
+
+  totalScore      Float
+  tier            Tier
+  confidence      Confidence
+
+  // Structured outputs
+  rationaleJson   String // stringified array of bullets
+  proofPointsJson String // stringified array of {text, supportType, url?}
+  flagsJson       String // stringified array
+  disqualifiersJson String // stringified array
+
+  nextStep        String
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model OutreachDraft {
+  id          String    @id @default(cuid())
+  candidateId String    @unique
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  tonePreset  String    @default("warm_professional")
+  subject     String
+  body        String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model OutcomeEvent {
+  id          String     @id @default(cuid())
+  candidateId String
+  candidate   Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  type        OutcomeType
+  payloadJson String?  // stub
+
+  createdAt   DateTime @default(now())
+
+  @@index([candidateId])
+}
+
+model ModelRunLog {
+  id          String   @id @default(cuid())
+  promptName  String
+  provider    String
+  model       String
+  success     Boolean
+  error       String?
+  tokensIn    Int?
+  tokensOut   Int?
+  createdAt   DateTime @default(now())
+}
+
+model ProjectFeedback {
+  id         String   @id @default(cuid())
+  projectId  String   @unique
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  rating     Int?     // 1-5
+  notes      String?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model CandidateFeedback {
+  id          String    @id @default(cuid())
+  candidateId String    @unique
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  misfit      Boolean   @default(false)
+  reason      String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
