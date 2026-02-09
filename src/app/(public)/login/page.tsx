@@ -10,35 +10,41 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto mt-20 max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h1 className="text-xl font-semibold tracking-tight">QM License Finder</h1>
-      <p className="mt-1 text-sm text-slate-600">
-        Single-user beta login (password from environment). This prototype does not send emails and does not scrape.
-      </p>
+    <div className="min-h-dvh bg-gradient-to-br from-slate-50 via-indigo-50/30 to-violet-50/30">
+      <div className="mx-auto max-w-md pt-24">
+        <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-8 shadow-xl shadow-indigo-500/5 backdrop-blur">
+          <h1 className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-2xl font-bold tracking-tight text-transparent">
+            QM License Finder
+          </h1>
+          <p className="mt-2 text-sm text-slate-600">
+            Single-user beta login. This prototype does not send emails and does not scrape.
+          </p>
 
-      <form action={action} className="mt-6 space-y-3">
-        <label className="block">
-          <span className="text-sm font-medium text-slate-700">Password</span>
-          <input
-            name="password"
-            type="password"
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring"
-            placeholder="Enter instance password"
-            required
-          />
-        </label>
+          <form action={action} className="mt-8 space-y-4">
+            <label className="block">
+              <span className="text-sm font-medium text-slate-700">Password</span>
+              <input
+                name="password"
+                type="password"
+                className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                placeholder="Enter instance password"
+                required
+              />
+            </label>
 
-        <button
-          type="submit"
-          className="w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-        >
-          Sign in
-        </button>
+            <button
+              type="submit"
+              className="w-full rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/30 hover:brightness-110 active:scale-[0.98]"
+            >
+              Sign in
+            </button>
 
-        <p className="text-xs text-slate-500">
-          Tip: set <code className="rounded bg-slate-100 px-1">APP_PASSWORD</code> and <code className="rounded bg-slate-100 px-1">AUTH_SECRET</code> in <code className="rounded bg-slate-100 px-1">.env</code>.
-        </p>
-      </form>
+            <p className="text-center text-xs text-slate-500">
+              Set <code className="rounded-md bg-indigo-50 px-1.5 py-0.5 text-indigo-700">APP_PASSWORD</code> in your <code className="rounded-md bg-indigo-50 px-1.5 py-0.5 text-indigo-700">.env</code> file
+            </p>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

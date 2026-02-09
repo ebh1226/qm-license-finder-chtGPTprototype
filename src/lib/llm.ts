@@ -313,12 +313,19 @@ export async function runStructured<T>(opts: {
     user,
     schema,
     jsonOnly = true,
-    maxRetries = 2,
+    maxRetries = 4,
   } = opts;
 
   let lastError: string | undefined;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (attempt > 0) {
+      // Truncated exponential backoff: 1s, 2s, 4s, ... capped at 16s
+      const delayMs = Math.min(1000 * Math.pow(2, attempt - 1), 16000);
+      const jitter = Math.random() * delayMs * 0.5;
+      await new Promise((r) => setTimeout(r, delayMs + jitter));
+    }
+
     try {
       const res = await callProvider({ promptName, system, user, jsonOnly });
       const cleaned = redactPotentialContactDetails(res.text).trim();
@@ -330,7 +337,10 @@ export async function runStructured<T>(opts: {
         throw new Error("Model did not return valid JSON");
       }
 
-      const validated = schema.safeParse(parsed);
+      // Some models (e.g. Gemini) wrap a single object in an array — unwrap it.
+      const unwrapped = Array.isArray(parsed) && parsed.length === 1 ? parsed[0] : parsed;
+
+      const validated = schema.safeParse(unwrapped);
       if (!validated.success) {
         throw new Error(`Schema validation failed: ${validated.error.message}`);
       }

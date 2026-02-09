@@ -297,7 +297,11 @@ export async function scoreAndTierProjectAction(projectId: string) {
   });
   if (!project) return;
 
-  for (const candidate of project.candidates) {
+  for (let ci = 0; ci < project.candidates.length; ci++) {
+    // Small delay between API calls to avoid rate-limiting (skip first)
+    if (ci > 0) await new Promise((r) => setTimeout(r, 1000));
+
+    const candidate = project.candidates[ci];
     const evidenceBullets = candidate.evidenceLinks
       .flatMap((l) => {
         const bullets = safeJsonParseArray<{ text: string; supportType: string }>(l.summaryJson);
@@ -389,7 +393,11 @@ export async function generateOutreachForATierAction(projectId: string) {
 
   const aCandidates = project.candidates.filter((c) => c.scoreCard?.tier === "A");
 
-  for (const c of aCandidates) {
+  for (let ci = 0; ci < aCandidates.length; ci++) {
+    // Small delay between API calls to avoid rate-limiting (skip first)
+    if (ci > 0) await new Promise((r) => setTimeout(r, 1000));
+
+    const c = aCandidates[ci];
     if (!c.scoreCard) continue;
 
     const proofPoints = safeJsonParseArray<{ text: string; supportType: string; url?: string | null }>(
