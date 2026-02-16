@@ -23,7 +23,6 @@ import {
   systemPreamble,
 } from "@/lib/prompts";
 import {
-  DEFAULT_GIANTS_EXCLUDE,
   clampText,
   isExcluded,
   normalizeUrl,
@@ -110,7 +109,7 @@ export async function addCandidateAction(projectId: string, formData: FormData) 
   const notes = nullIfEmpty(formData.get("notes"));
 
   const project = await prisma.project.findUnique({ where: { id: projectId }, select: { excludeList: true } });
-  const exclude = [...DEFAULT_GIANTS_EXCLUDE, ...parseExcludeList(project?.excludeList)];
+  const exclude = parseExcludeList(project?.excludeList);
   if (isExcluded(name, exclude)) {
     // Silently ignore adds that are excluded.
     return;
@@ -140,7 +139,7 @@ export async function uploadCandidatesCsvAction(projectId: string, formData: For
   if (!rows.length) return;
 
   const project = await prisma.project.findUnique({ where: { id: projectId }, select: { excludeList: true } });
-  const exclude = [...DEFAULT_GIANTS_EXCLUDE, ...parseExcludeList(project?.excludeList)];
+  const exclude = parseExcludeList(project?.excludeList);
 
   for (const r of rows.slice(0, 200)) {
     if (!r.name.trim()) continue;
@@ -369,7 +368,7 @@ export async function generateCandidatesAction(projectId: string) {
   });
   if (!project) return;
 
-  const exclude = [...DEFAULT_GIANTS_EXCLUDE, ...parseExcludeList(project.excludeList)];
+  const exclude = parseExcludeList(project.excludeList);
 
   const system = systemPreamble();
   const user = candidateGenerationUserPrompt({ ...project, excludeList: exclude });

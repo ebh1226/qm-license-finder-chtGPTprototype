@@ -1,17 +1,5 @@
 import crypto from "crypto";
 
-export const DEFAULT_GIANTS_EXCLUDE = [
-  "YETI",
-  "Patagonia",
-  "The North Face",
-  "Coleman",
-  "Hydro Flask",
-  "Stanley",
-  "Igloo",
-  "RTIC",
-  "CamelBak",
-  "REI Co-op",
-];
 
 export function parseExcludeList(text?: string | null): string[] {
   if (!text) return [];
