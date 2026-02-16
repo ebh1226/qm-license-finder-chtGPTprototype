@@ -7,9 +7,9 @@ import { PrintButton } from "@/components/PrintButton";
 
 export const dynamic = "force-dynamic";
 
-export default async function ReportPage({ params }: { params: { projectId: string } }) {
+export default async function ReportPage({ params }: { params: Promise<{ projectId: string }> }) {
   await requireAuth();
-  const { projectId } = params;
+  const { projectId } = await params;
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
@@ -89,7 +89,7 @@ function ReportCandidate({ c }: { c: any }) {
           {c.website ? <div className="text-xs text-slate-600">{c.website}</div> : null}
         </div>
         <div className="text-xs text-slate-600">
-          Tier {score?.tier} · Score {score?.totalScore} · Confidence {score?.confidence}
+          Tier {score?.tier} · Score {score?.totalScore} · Evidence {score?.confidence}
         </div>
       </div>
 

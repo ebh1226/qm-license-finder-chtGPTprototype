@@ -2,18 +2,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
-import { toScoreCardView } from "@/lib/db";
+import { safeParseJson, toScoreCardView } from "@/lib/db";
 import {
   generateOutreachForATierAction,
+  generateOutreachForCandidateAction,
   saveCandidateFeedbackAction,
   saveProjectFeedbackAction,
   scoreAndTierProjectAction,
 } from "@/app/(protected)/projects/actions";
 
-function Badge({ tone, children }: { tone: "green" | "amber" | "slate"; children: React.ReactNode }) {
+function Badge({ tone, children }: { tone: "green" | "amber" | "slate" | "red"; children: React.ReactNode }) {
   const colors = {
     green: "bg-gradient-to-r from-emerald-50 to-green-50 text-emerald-700 ring-1 ring-emerald-200/50",
     amber: "bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 ring-1 ring-amber-200/50",
+    red: "bg-gradient-to-r from-red-50 to-rose-50 text-red-700 ring-1 ring-red-200/50",
     slate: "bg-slate-100 text-slate-600",
   };
   return <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${colors[tone]}`}>{children}</span>;
@@ -87,7 +89,7 @@ export default async function ResultsPage({ params }: { params: Promise<{ projec
       </div>
 
       <div className="rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50 to-violet-50 p-5 text-sm text-indigo-900 shadow-sm">
-        <p className="font-semibold">Confidence + sourcing labels</p>
+        <p className="font-semibold">Evidence level + sourcing labels</p>
         <ul className="mt-3 list-disc space-y-2 pl-5">
           <li>
             <Badge tone="green">link_supported</Badge> = derived from a user-provided public URL that successfully fetched and was summarized.
@@ -194,7 +196,7 @@ function TierSection({
 
 function CandidateCard({ c, projectId }: { c: any; projectId: string }) {
   const score = c.score;
-  const confidence = score?.confidence as "High" | "Medium" | undefined;
+  const confidence = score?.confidence as "High" | "Medium" | "Low" | undefined;
 
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-md">
@@ -205,7 +207,7 @@ function CandidateCard({ c, projectId }: { c: any; projectId: string }) {
             {score?.tier === "A" && <Badge tone="green">A</Badge>}
             {score?.tier === "B" && <Badge tone="amber">B</Badge>}
             {score?.tier === "C" && <Badge tone="slate">C</Badge>}
-            {confidence === "High" ? <Badge tone="green">Confidence: High</Badge> : <Badge tone="amber">Confidence: Medium</Badge>}
+            {confidence === "High" ? <Badge tone="green">Evidence: High</Badge> : confidence === "Low" ? <Badge tone="red">Evidence: Low</Badge> : <Badge tone="amber">Evidence: Medium</Badge>}
             <Badge tone="slate">Score: {score?.totalScore}</Badge>
           </div>
           {c.website && (
@@ -222,16 +224,14 @@ function CandidateCard({ c, projectId }: { c: any; projectId: string }) {
           </div>
         </div>
         <div className="flex flex-col items-end gap-3">
-          <Link
-            href={`/projects/${projectId}#candidate-${c.id}`}
-            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
-          >
-            Evidence
-          </Link>
           {c.outreachDraft ? (
             <Badge tone="green">Outreach ready</Badge>
           ) : (
-            <Badge tone="slate">No outreach draft</Badge>
+            <form action={generateOutreachForCandidateAction.bind(null, c.id)}>
+              <button type="submit" className="rounded-lg bg-gradient-to-r from-indigo-500 to-violet-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-110 active:scale-[0.98]">
+                Generate outreach
+              </button>
+            </form>
           )}
         </div>
       </div>
@@ -239,13 +239,48 @@ function CandidateCard({ c, projectId }: { c: any; projectId: string }) {
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="rounded-xl bg-slate-50/50 p-4">
           <h4 className="text-sm font-semibold text-slate-800">Proof points</h4>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-700">
-            {(score?.proofPoints ?? []).map((p: any, i: number) => (
-              <li key={i}>
-                {p.text} {p.supportType ? <span className="ml-1 text-xs text-slate-400">({p.supportType})</span> : null}
-              </li>
-            ))}
-          </ul>
+          <div className="mt-3 space-y-4 text-sm text-slate-700">
+            {(() => {
+              const points = score?.proofPoints ?? [];
+              const linkSupported = points.filter((p: any) => p.supportType === "link_supported");
+              const toVerify = points.filter((p: any) => p.supportType === "to_verify");
+              const other = points.filter((p: any) => p.supportType !== "link_supported" && p.supportType !== "to_verify");
+              return (
+                <>
+                  {linkSupported.length > 0 && (
+                    <div>
+                      <Badge tone="green">link_supported</Badge>
+                      <ul className="mt-2 list-disc space-y-1.5 pl-5">
+                        {linkSupported.map((p: any, i: number) => (
+                          <li key={i}>{p.text}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {toVerify.length > 0 && (
+                    <div>
+                      <Badge tone="amber">to_verify</Badge>
+                      <ul className="mt-2 list-disc space-y-1.5 pl-5">
+                        {toVerify.map((p: any, i: number) => (
+                          <li key={i}>{p.text}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {other.length > 0 && (
+                    <div>
+                      <Badge tone="slate">assumed</Badge>
+                      <ul className="mt-2 list-disc space-y-1.5 pl-5">
+                        {other.map((p: any, i: number) => (
+                          <li key={i}>{p.text}{p.supportType ? <span className="ml-1 text-xs text-slate-400">({p.supportType})</span> : null}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
         </div>
         <div className="rounded-xl bg-slate-50/50 p-4">
           <h4 className="text-sm font-semibold text-slate-800">Flags & disqualifiers</h4>
@@ -282,6 +317,8 @@ function CandidateCard({ c, projectId }: { c: any; projectId: string }) {
         </div>
       </div>
 
+      <EvidenceDetail c={c} score={score} />
+
       {c.outreachDraft ? (
         <details className="mt-6 rounded-xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50/50 to-violet-50/50 p-4">
           <summary className="cursor-pointer text-sm font-semibold text-indigo-700 hover:text-indigo-800">Outreach draft (no sending)</summary>
@@ -313,5 +350,107 @@ function CandidateCard({ c, projectId }: { c: any; projectId: string }) {
         </form>
       </details>
     </div>
+  );
+}
+
+const CRITERION_LABELS: Record<string, string> = {
+  categoryFit: "Category Fit",
+  distributionAlignment: "Distribution Alignment",
+  licensingActivity: "Licensing Activity",
+  scaleAppropriateness: "Scale Appropriateness",
+  qualityReputation: "Quality & Reputation",
+  geoCoverage: "Geo Coverage",
+  recentMomentum: "Recent Momentum",
+  manufacturingCapability: "Manufacturing Capability",
+};
+
+function EvidenceDetail({ c, score }: { c: any; score: any }) {
+  const criteria = (score?.criteria ?? {}) as Record<string, number>;
+  const evidenceLinks: Array<{ url: string; excerpt?: string | null; fetchedText?: string | null; summaryJson?: string | null }> = c.evidenceLinks ?? [];
+  const customData = c.customData ? (() => { try { return JSON.parse(c.customData) as Record<string, string>; } catch { return null; } })() : null;
+
+  return (
+    <details className="mt-6 rounded-xl border border-slate-200/80 bg-slate-50/50 p-4">
+      <summary className="cursor-pointer text-sm font-semibold text-slate-700 hover:text-slate-900">Evidence & scoring inputs</summary>
+      <div className="mt-4 space-y-5">
+
+        {/* Criterion score breakdown */}
+        <div>
+          <div className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Score breakdown</div>
+          <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1.5 sm:grid-cols-4">
+            {Object.entries(CRITERION_LABELS).map(([key, label]) => {
+              const val = criteria[key] as number | undefined;
+              return (
+                <div key={key} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="text-slate-600">{label}</span>
+                  <span className="font-semibold text-slate-900">{val ?? "–"}<span className="text-slate-400 font-normal">/5</span></span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Candidate notes */}
+        {c.notes?.trim() && (
+          <div>
+            <div className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Candidate notes</div>
+            <p className="mt-1 text-sm text-slate-700">{c.notes}</p>
+          </div>
+        )}
+
+        {/* Custom data (extra CSV columns) */}
+        {customData && Object.keys(customData).length > 0 && (
+          <div>
+            <div className="text-xs font-semibold text-slate-600 uppercase tracking-wide">User-provided data</div>
+            <dl className="mt-2 grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2 text-sm">
+              {Object.entries(customData).map(([key, value]) => (
+                <div key={key} className="flex gap-2">
+                  <dt className="text-slate-500 font-medium">{key}:</dt>
+                  <dd className="text-slate-700">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
+
+        {/* Evidence links */}
+        {evidenceLinks.length > 0 ? (
+          <div>
+            <div className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Evidence sources ({evidenceLinks.length})</div>
+            <div className="mt-2 space-y-3">
+              {evidenceLinks.map((el, i) => {
+                const summaryBullets = safeParseJson<Array<{ text: string; supportType: string }>>(el.summaryJson, []);
+                return (
+                  <div key={i} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
+                    <a href={el.url} target="_blank" rel="noreferrer" className="text-indigo-600 hover:text-indigo-800 hover:underline break-all">{el.url}</a>
+                    {el.excerpt && (
+                      <div className="mt-2">
+                        <span className="text-xs font-medium text-slate-500">User excerpt:</span>
+                        <p className="mt-0.5 text-slate-700 italic">{el.excerpt}</p>
+                      </div>
+                    )}
+                    {summaryBullets.length > 0 && (
+                      <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-700">
+                        {summaryBullets.map((b, j) => (
+                          <li key={j}>{b.text}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {!el.excerpt && summaryBullets.length === 0 && el.fetchedText && (
+                      <p className="mt-1 text-xs text-slate-400">Fetched content available (used during scoring)</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Evidence sources</div>
+            <p className="mt-1 text-sm text-slate-400">No evidence links were provided for this candidate.</p>
+          </div>
+        )}
+      </div>
+    </details>
   );
 }

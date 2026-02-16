@@ -67,6 +67,22 @@ function mockByPrompt(promptName: string): string {
     });
   }
 
+  if (promptName === "candidate_research") {
+    return JSON.stringify({
+      website: "https://www.example.com",
+      description: "A premium outdoor goods manufacturer with specialty retail focus.",
+      category: "Outdoor lifestyle / home goods",
+      licensingHistory: "Known to have licensing partnerships in the outdoor space.",
+      keyProducts: "Drinkware, outdoor entertaining accessories",
+      distributionChannels: "Specialty outdoor retailers, upscale boutiques",
+      notablePartnerships: null,
+      searchQueries: [
+        "Example Company licensing partnerships",
+        "Example Company outdoor products distribution",
+      ],
+    });
+  }
+
   if (promptName === "evidence_summary") {
     return JSON.stringify({
       bullets: [

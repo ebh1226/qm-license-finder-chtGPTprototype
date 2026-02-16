@@ -25,6 +25,7 @@ enum Tier {
 enum Confidence {
   High
   Medium
+  Low
 }
 
 enum OutcomeType {
@@ -72,6 +73,7 @@ model Candidate {
   name        String
   website     String?
   notes       String?
+  customData  String?              // JSON: Record<string, string> from extra CSV columns
   provenance  CandidateProvenance  @default(manual)
 
   createdAt   DateTime @default(now())

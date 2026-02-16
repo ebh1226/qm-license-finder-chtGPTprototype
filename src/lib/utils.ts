@@ -28,8 +28,14 @@ export function isExcluded(candidateName: string, exclude: string[]): boolean {
 
 export function normalizeUrl(url?: string | null): string | null {
   if (!url) return null;
+  let raw = url.trim().replace(/^<|>$/g, "").trim();
+  if (!raw) return null;
+  // Auto-add https:// if no protocol is present
+  if (!/^https?:\/\//i.test(raw)) {
+    raw = `https://${raw}`;
+  }
   try {
-    const u = new URL(url);
+    const u = new URL(raw);
     if (u.protocol !== "http:" && u.protocol !== "https:") return null;
     return u.toString();
   } catch {
@@ -95,10 +101,19 @@ export function sha256(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");
 }
 
-export type ParsedCandidateRow = { name: string; website?: string; notes?: string };
+export type ParsedCandidateRow = { name: string; website?: string; notes?: string; links?: string[]; extraColumns?: Record<string, string> };
+
+// Find the first header index that matches any of the given aliases.
+function findCol(header: string[], aliases: string[]): number {
+  for (const alias of aliases) {
+    const idx = header.indexOf(alias);
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
 
 export function parseCsvCandidates(csv: string): ParsedCandidateRow[] {
-  // Minimal CSV parser for: name, website(optional), notes(optional)
+  // Flexible CSV parser — accepts varied column names.
   // Supports quoted fields; does not support embedded newlines in quotes.
   const lines = csv
     .split(/\r?\n/)
@@ -107,11 +122,17 @@ export function parseCsvCandidates(csv: string): ParsedCandidateRow[] {
   if (lines.length === 0) return [];
 
   const rows = lines.map(parseCsvLine);
-  const header = rows[0].map((h) => h.toLowerCase());
+  const header = rows[0].map((h) => h.toLowerCase().trim());
 
-  const nameIdx = header.indexOf("name") >= 0 ? header.indexOf("name") : 0;
-  const websiteIdx = header.indexOf("website");
-  const notesIdx = header.indexOf("notes");
+  const nameIdx = Math.max(0, findCol(header, ["name", "company", "company name", "candidate", "brand"]));
+  const websiteIdx = findCol(header, ["website", "url", "site", "homepage", "company url", "company website", "web"]);
+  const notesIdx = findCol(header, ["notes", "note", "description", "comments", "comment", "details", "info"]);
+  const linksIdx = findCol(header, ["links", "link", "source", "sources", "evidence", "references", "reference"]);
+
+  // Identify known column indices so we can capture everything else
+  const knownIndices = new Set([nameIdx, websiteIdx, notesIdx, linksIdx].filter((i) => i >= 0));
+  const originalHeaders = rows[0].map((h) => h.trim());
+  const extraColIndices = header.map((_, i) => i).filter((i) => !knownIndices.has(i));
 
   return rows
     .slice(1)
@@ -119,9 +140,22 @@ export function parseCsvCandidates(csv: string): ParsedCandidateRow[] {
       const name = (cols[nameIdx] ?? "").trim();
       const website = websiteIdx >= 0 ? (cols[websiteIdx] ?? "").trim() : undefined;
       const notes = notesIdx >= 0 ? (cols[notesIdx] ?? "").trim() : undefined;
-      return { name, website, notes };
+      const linksRaw = linksIdx >= 0 ? (cols[linksIdx] ?? "").trim() : undefined;
+      const links = linksRaw
+        ? linksRaw.split(/[;\s]+/).map((u) => u.trim()).filter((u) => u.length > 0)
+        : undefined;
+
+      // Collect any extra columns into a key-value map
+      const extra: Record<string, string> = {};
+      for (const i of extraColIndices) {
+        const val = (cols[i] ?? "").trim();
+        if (val) extra[originalHeaders[i]] = val;
+      }
+      const extraColumns = Object.keys(extra).length > 0 ? extra : undefined;
+
+      return { name, website, notes, links, extraColumns };
     })
-    .filter((r) => r.name.length > 0);
+    .filter((r) => r.name.replace(/[\u200B-\u200D\uFEFF]/g, "").trim().length > 0);
 }
 
 function parseCsvLine(line: string): string[] {

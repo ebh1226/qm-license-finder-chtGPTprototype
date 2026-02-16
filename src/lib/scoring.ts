@@ -22,12 +22,44 @@ export const DEFAULT_WEIGHTS: Weights = {
   manufacturingCapability: 0.04,
 };
 
+/**
+ * Checks whether any disqualifier targets the Category pillar.
+ * Returns true for "wrong category" or similar category-related disqualifiers.
+ */
+export function isCategoryDisqualifier(disq: string): boolean {
+  const d = disq.toLowerCase();
+  return d.includes("wrong category") || d.includes("category mismatch");
+}
+
+/**
+ * Checks whether any disqualifier targets the Distribution pillar.
+ * Returns true for "distribution mismatch", "mass market" misalignment, etc.
+ */
+export function isDistributionDisqualifier(disq: string): boolean {
+  const d = disq.toLowerCase();
+  return (
+    d.includes("distribution mismatch") ||
+    (d.includes("mass market") && (d.includes("mismatch") || d.includes("misalign")))
+  );
+}
+
 export function computeTotalScore(out: ScoringOutput, weights: Weights = DEFAULT_WEIGHTS): number {
   const s = out.criterionScores;
-  // Weighted average where each criterion is scored 0-5; scale to 0-100.
+  const disqs = out.disqualifiers ?? [];
+
+  // Zero-Weight Disqualifiers: if an automatic disqualifier is detected for
+  // Category or Distribution, that pillar's score is forced to 0.  Since these
+  // two pillars account for 60% of the total weight, this mathematically caps
+  // the maximum achievable score at ~40, keeping the brand out of A/B tiers.
+  const categoryZeroed = disqs.some(isCategoryDisqualifier);
+  const distributionZeroed = disqs.some(isDistributionDisqualifier);
+
+  const catScore = categoryZeroed ? 0 : s.categoryFit / 5;
+  const distScore = distributionZeroed ? 0 : s.distributionAlignment / 5;
+
   const weighted =
-    (s.categoryFit / 5) * weights.categoryFit +
-    (s.distributionAlignment / 5) * weights.distributionAlignment +
+    catScore * weights.categoryFit +
+    distScore * weights.distributionAlignment +
     (s.licensingActivity / 5) * weights.licensingActivity +
     (s.scaleAppropriateness / 5) * weights.scaleAppropriateness +
     (s.qualityReputation / 5) * weights.qualityReputation +
@@ -42,10 +74,10 @@ export function enforceConfidence({
   requested,
   hasEvidence,
 }: {
-  requested: "High" | "Medium";
+  requested: "High" | "Medium" | "Low";
   hasEvidence: boolean;
-}): "High" | "Medium" {
-  if (!hasEvidence) return "Medium";
+}): "High" | "Medium" | "Low" {
+  if (!hasEvidence) return "Low";
   return requested;
 }
 
@@ -59,12 +91,14 @@ export function normalizeDisqualifiers(disq: string[]): string[] {
 export function isHardDisqualifier(disq: string): boolean {
   const d = disq.toLowerCase();
   return (
-    d.includes("distribution mismatch") ||
-    d.includes("wrong category") ||
+    isCategoryDisqualifier(disq) ||
+    isDistributionDisqualifier(disq) ||
     d.includes("dormant") ||
     d.includes("dead") ||
     d.includes("website down") ||
-    d.includes("quality") && d.includes("issues")
+    d.includes("no information available") ||
+    d.includes("cannot evaluate") ||
+    (d.includes("quality") && d.includes("issues"))
   );
 }
 

@@ -43,7 +43,7 @@ export async function GET(
       return {
         tier: sc.tier,
         totalScore: sc.totalScore,
-        confidence: sc.confidence,
+        evidenceLevel: sc.confidence,
         companyName: c.name,
         website: c.website ?? "",
         provenance: c.provenance,

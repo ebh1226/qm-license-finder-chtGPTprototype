@@ -42,8 +42,8 @@ export const ScoringOutputSchema = z.object({
   disqualifiers: z.array(z.string().min(1).max(80)).max(10).default([]),
   flags: z.array(z.string().min(1).max(120)).max(10).default([]),
   rationaleBullets: z.array(z.string().min(1).max(240)).min(3).max(5),
-  proofPoints: z.array(ProofPointSchema).min(2).max(5),
-  confidence: z.enum(["High", "Medium"]),
+  proofPoints: z.array(ProofPointSchema).min(2).max(10),
+  confidence: z.enum(["High", "Medium", "Low"]),
   nextStep: z.string().min(1).max(400),
 });
 export type ScoringOutput = z.infer<typeof ScoringOutputSchema>;
@@ -53,6 +53,18 @@ export const OutreachDraftSchema = z.object({
   body: z.string().min(20).max(2500),
 });
 export type OutreachDraftOutput = z.infer<typeof OutreachDraftSchema>;
+
+export const CandidateResearchSchema = z.object({
+  website: z.string().url().optional().nullable(),
+  description: z.string().max(500).optional().nullable(),
+  category: z.string().max(120).optional().nullable(),
+  licensingHistory: z.string().max(400).optional().nullable(),
+  keyProducts: z.string().max(300).optional().nullable(),
+  distributionChannels: z.string().max(300).optional().nullable(),
+  notablePartnerships: z.string().max(300).optional().nullable(),
+  searchQueries: z.array(z.string().max(200)).min(1).max(3),
+});
+export type CandidateResearchOutput = z.infer<typeof CandidateResearchSchema>;
 
 export const EvidenceSummarySchema = z.object({
   bullets: z.array(
