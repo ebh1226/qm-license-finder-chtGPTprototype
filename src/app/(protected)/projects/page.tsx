@@ -63,9 +63,9 @@ export default async function ProjectsPage() {
       <div className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50 to-orange-50 p-5 text-sm text-amber-900 shadow-sm">
         <p className="font-semibold">Reminder</p>
         <ul className="mt-3 list-disc space-y-2 pl-5">
-          <li>No search API in v0.1 — attach public evidence links or paste short excerpts for stronger proof points.</li>
-          <li>Outputs are labeled: link-supported vs to-verify. Always verify before client delivery.</li>
-          <li>No personal contact details are generated; use roles/titles only.</li>
+          <li>Web search (Serper) runs automatically during research — evidence links are fetched and summarized for each candidate.</li>
+          <li>Proof points are labeled by support type: <strong>link-supported</strong>, <strong>user-provided</strong>, or <strong>to-verify</strong>. Always verify before client delivery.</li>
+          <li>No personal contact details are generated; outreach drafts use role/title placeholders only.</li>
         </ul>
       </div>
     </div>

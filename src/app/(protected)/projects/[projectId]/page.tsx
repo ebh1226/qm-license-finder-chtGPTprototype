@@ -182,7 +182,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
               rows={4}
             />
             <p className="mt-2 text-xs text-slate-500">
-              Current exclude count: {exclude.length}. Used as heuristic for "not on exhibitor list" in v0.1.
+              Current exclude count: {exclude.length}. These companies will be filtered out of generated candidates.
             </p>
           </label>
 
@@ -305,7 +305,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
               <li>Category + distribution weights = 60%</li>
               <li>Licensing activity weight = 20%</li>
               <li>Everything else combined = 20%</li>
-              <li>Disqualifiers demote out of A-tier</li>
+              <li>Category or distribution disqualifiers zero out that pillar (max ~40% score)</li>
+              <li>Hard disqualifiers automatically lock candidates into C-tier</li>
             </ul>
           </div>
         </div>
