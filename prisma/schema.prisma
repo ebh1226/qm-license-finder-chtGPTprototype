@@ -1,13 +1,13 @@
 // QM License Finder Prototype v0.1
-// Prisma schema (SQLite) - forward compatible with future Postgres.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum CandidateProvenance {

@@ -145,7 +145,8 @@ export function candidateResearchUserPrompt(input: {
 
 export function evidenceSummaryUserPrompt(input: { url: string; text: string; kind: "fetched" | "excerpt" }): string {
   return [
-    "Summarize the evidence text into 2-4 short bullets relevant to licensing partner fit.",
+    "Summarize the evidence text into 1-4 short bullets relevant to licensing partner fit.",
+    "If the page contains no useful information about the company or licensing, return an empty bullets array.",
     "Do NOT add any facts not in the evidence text.",
     "Return JSON only.",
     `\nEvidence URL: ${input.url}`,
@@ -153,7 +154,7 @@ export function evidenceSummaryUserPrompt(input: { url: string; text: string; ki
     "\nEvidence text (truncated):",
     clampText(input.text, 6000),
     "\nOutput JSON schema:",
-    "{ bullets: [{ text: string, supportType: 'link_supported'|'user_provided_excerpt' }, ...] }",
+    "{ bullets: [{ text: string }, ...] }",
   ].join("\n");
 }
 

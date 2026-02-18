@@ -86,8 +86,8 @@ function mockByPrompt(promptName: string): string {
   if (promptName === "evidence_summary") {
     return JSON.stringify({
       bullets: [
-        { text: "Evidence link highlights relevant product/category adjacency (summary).", supportType: "link_supported" },
-        { text: "Evidence link suggests distribution/channel alignment indicators (summary).", supportType: "link_supported" },
+        { text: "Evidence link highlights relevant product/category adjacency (summary)." },
+        { text: "Evidence link suggests distribution/channel alignment indicators (summary)." },
       ],
     });
   }

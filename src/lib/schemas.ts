@@ -70,8 +70,7 @@ export const EvidenceSummarySchema = z.object({
   bullets: z.array(
     z.object({
       text: z.string().min(1).max(280),
-      supportType: z.enum(["link_supported", "user_provided_excerpt"]),
     })
-  ).min(2).max(4),
+  ).max(4),
 });
 export type EvidenceSummaryOutput = z.infer<typeof EvidenceSummarySchema>;
