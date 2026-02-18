@@ -1,6 +1,10 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
+import { deleteProjectAction } from "@/app/(protected)/projects/actions";
+import ActionButton from "@/components/ActionButton";
 
 export default async function ProjectsPage() {
   const user = await requireAuth();
@@ -34,12 +38,13 @@ export default async function ProjectsPage() {
               <th className="px-5 py-4 text-left font-semibold">Name</th>
               <th className="px-5 py-4 text-left font-semibold">Updated</th>
               <th className="px-5 py-4 text-left font-semibold">Created</th>
+              <th className="px-5 py-4 text-right font-semibold"></th>
             </tr>
           </thead>
           <tbody>
             {projects.length === 0 ? (
               <tr>
-                <td className="px-5 py-8 text-center text-slate-500" colSpan={3}>
+                <td className="px-5 py-8 text-center text-slate-500" colSpan={4}>
                   No projects yet. Create one to get started.
                 </td>
               </tr>
@@ -53,6 +58,14 @@ export default async function ProjectsPage() {
                   </td>
                   <td className="px-5 py-4 text-slate-600">{new Date(p.updatedAt).toLocaleString()}</td>
                   <td className="px-5 py-4 text-slate-600">{new Date(p.createdAt).toLocaleString()}</td>
+                  <td className="px-5 py-4 text-right">
+                    <ActionButton
+                      action={deleteProjectAction.bind(null, p.id)}
+                      label="Delete"
+                      pendingLabel="Deleting…"
+                      className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 shadow-sm transition-all duration-200 hover:border-red-300 hover:bg-red-50 active:scale-[0.98] disabled:opacity-50"
+                    />
+                  </td>
                 </tr>
               ))
             )}

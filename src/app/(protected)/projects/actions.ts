@@ -77,6 +77,12 @@ export async function createProjectAction(formData: FormData) {
   redirect(`/projects/${project.id}`);
 }
 
+export async function deleteProjectAction(projectId: string) {
+  await requireAuth();
+  await prisma.project.delete({ where: { id: projectId } });
+  revalidatePath("/projects");
+}
+
 export async function updateProjectAction(projectId: string, formData: FormData) {
   await requireAuth();
 
