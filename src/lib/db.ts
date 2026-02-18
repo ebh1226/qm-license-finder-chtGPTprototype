@@ -4,7 +4,7 @@ export function parseJson<T>(s: string): T {
   return JSON.parse(s) as T;
 }
 
-export function safeParseJson<T>(s?: string | null, fallback: T): T {
+export function safeParseJson<T>(s: string | null | undefined, fallback: T): T {
   if (!s) return fallback;
   try {
     return JSON.parse(s) as T;
