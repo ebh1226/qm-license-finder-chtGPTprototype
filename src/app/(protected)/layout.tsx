@@ -20,9 +20,6 @@ export default async function ProtectedLayout({ children }: { children: React.Re
             <Link href="/projects" className="rounded-lg px-3 py-2 font-medium text-slate-600 transition-colors duration-200 hover:bg-indigo-50 hover:text-indigo-700">
               Projects
             </Link>
-            <Link href="/logout" className="rounded-lg px-3 py-2 font-medium text-slate-600 transition-colors duration-200 hover:bg-red-50 hover:text-red-700">
-              Logout
-            </Link>
           </nav>
         </div>
       </header>
