@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 
@@ -20,20 +20,21 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const password = String(body.password || "");
+  const formData = await request.formData();
+  const password = String(formData.get("password") || "");
 
   const appPassword = process.env.APP_PASSWORD;
   const secret = process.env.AUTH_SECRET;
   if (!appPassword || !secret) {
-    return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+    return new Response("Server misconfigured", { status: 500 });
   }
 
   const storedHash = crypto.createHash("sha256").update(appPassword + secret).digest("hex");
   const inputHash = crypto.createHash("sha256").update(password + secret).digest("hex");
 
   if (!timingSafeEqual(storedHash, inputHash)) {
-    return NextResponse.json({ error: "Invalid password" }, { status: 401 });
+    const url = new URL("/login?error=invalid", request.url);
+    return Response.redirect(url.toString(), 303);
   }
 
   // Get or create single user
@@ -47,15 +48,16 @@ export async function POST(request: NextRequest) {
   const payloadB64 = base64UrlEncode(JSON.stringify(payload));
   const token = `${payloadB64}.${hmacSign(payloadB64, secret)}`;
 
-  const response = NextResponse.json({ ok: true });
-  response.cookies.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: true,
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
+  const cookie = `${COOKIE_NAME}=${token}; HttpOnly; SameSite=Lax; Secure; Path=/; Max-Age=${60 * 60 * 24 * 7}`;
+  const redirectUrl = new URL("/projects", request.url);
 
-  console.log("[auth] cookie set via route handler for user", user.id);
-  return response;
+  console.log("[auth] setting cookie via raw Set-Cookie header for user", user.id);
+
+  return new Response(null, {
+    status: 303,
+    headers: {
+      Location: redirectUrl.toString(),
+      "Set-Cookie": cookie,
+    },
+  });
 }

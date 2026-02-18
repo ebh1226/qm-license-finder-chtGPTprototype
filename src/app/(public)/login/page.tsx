@@ -1,42 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-
 export default function LoginPage() {
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError("");
-    setLoading(true);
-
     const formData = new FormData(e.currentTarget);
     const password = formData.get("password") as string;
 
-    try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || "Login failed");
-        setLoading(false);
-        return;
-      }
-
-      // Cookie is set by the response — navigate to projects
-      router.push("/projects");
-      router.refresh();
-    } catch {
-      setError("Something went wrong");
-      setLoading(false);
-    }
+    // Dynamically create and submit a real HTML form to bypass Next.js interception
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "/api/login";
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = "password";
+    input.value = password;
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
   }
 
   return (
@@ -62,16 +42,11 @@ export default function LoginPage() {
               />
             </label>
 
-            {error && (
-              <p className="text-sm text-red-600">{error}</p>
-            )}
-
             <button
               type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/30 hover:brightness-110 active:scale-[0.98] disabled:opacity-50"
+              className="w-full rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/30 hover:brightness-110 active:scale-[0.98]"
             >
-              {loading ? "Signing in..." : "Sign in"}
+              Sign in
             </button>
 
             <p className="text-center text-xs text-slate-500">
