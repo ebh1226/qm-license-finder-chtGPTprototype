@@ -1,14 +1,42 @@
 "use client";
 
-import { useRef } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const formRef = useRef<HTMLFormElement>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  function handleSubmit() {
-    // Native form submission bypasses Next.js fetch interception
-    // so the Set-Cookie header in the redirect response is handled by the browser
-    formRef.current?.submit();
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const password = formData.get("password") as string;
+
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "Login failed");
+        setLoading(false);
+        return;
+      }
+
+      // Cookie is set by the response — navigate to projects
+      router.push("/projects");
+      router.refresh();
+    } catch {
+      setError("Something went wrong");
+      setLoading(false);
+    }
   }
 
   return (
@@ -22,16 +50,7 @@ export default function LoginPage() {
             Single-user beta login. This prototype does not send emails and does not scrape.
           </p>
 
-          <form
-            ref={formRef}
-            action="/api/login"
-            method="POST"
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSubmit();
-            }}
-            className="mt-8 space-y-4"
-          >
+          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Password</span>
               <input
@@ -43,11 +62,16 @@ export default function LoginPage() {
               />
             </label>
 
+            {error && (
+              <p className="text-sm text-red-600">{error}</p>
+            )}
+
             <button
               type="submit"
-              className="w-full rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/30 hover:brightness-110 active:scale-[0.98]"
+              disabled={loading}
+              className="w-full rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/30 hover:brightness-110 active:scale-[0.98] disabled:opacity-50"
             >
-              Sign in
+              {loading ? "Signing in..." : "Sign in"}
             </button>
 
             <p className="text-center text-xs text-slate-500">

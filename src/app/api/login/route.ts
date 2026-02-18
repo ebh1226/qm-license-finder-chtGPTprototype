@@ -20,8 +20,8 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  const formData = await request.formData();
-  const password = String(formData.get("password") || "");
+  const body = await request.json();
+  const password = String(body.password || "");
 
   const appPassword = process.env.APP_PASSWORD;
   const secret = process.env.AUTH_SECRET;
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   const inputHash = crypto.createHash("sha256").update(password + secret).digest("hex");
 
   if (!timingSafeEqual(storedHash, inputHash)) {
-    return NextResponse.redirect(new URL("/login?error=invalid", request.url));
+    return NextResponse.json({ error: "Invalid password" }, { status: 401 });
   }
 
   // Get or create single user
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
   const payloadB64 = base64UrlEncode(JSON.stringify(payload));
   const token = `${payloadB64}.${hmacSign(payloadB64, secret)}`;
 
-  const response = NextResponse.redirect(new URL("/projects", request.url));
+  const response = NextResponse.json({ ok: true });
   response.cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
