@@ -74,6 +74,13 @@ export async function getAuthUser(): Promise<AuthUser | null> {
 export async function requireAuth(): Promise<AuthUser> {
   const user = await getAuthUser();
   if (!user) redirect("/login");
+
+  // Ensure the user exists in the database (handles DB migration from SQLite to Postgres)
+  const exists = await prisma.user.findUnique({ where: { id: user.id }, select: { id: true } });
+  if (!exists) {
+    await prisma.user.create({ data: { id: user.id }, select: { id: true } });
+  }
+
   return user;
 }
 
