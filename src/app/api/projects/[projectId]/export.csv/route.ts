@@ -8,15 +8,16 @@ export const runtime = "nodejs";
 
 export async function GET(
   request: Request,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
+  const { projectId } = await params;
   const user = await getAuthUser();
   if (!user) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
   const project = await prisma.project.findFirst({
-    where: { id: params.projectId, ownerId: user.id },
+    where: { id: projectId, ownerId: user.id },
     select: { id: true, name: true },
   });
   if (!project) {
