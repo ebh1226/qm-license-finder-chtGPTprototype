@@ -14,6 +14,7 @@ import {
 import { parseExcludeList } from "@/lib/utils";
 import CandidateTable from "./CandidateTable";
 import SubmitButton from "@/components/SubmitButton";
+import ActionButton from "@/components/ActionButton";
 
 function completeness(p: {
   brandCategory?: string | null;
@@ -205,15 +206,9 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold text-slate-900">Candidates</h2>
             <div className="flex flex-wrap gap-2">
-              <form action={generateCandidatesAction.bind(null, projectId)}>
-                <SubmitButton label="Generate (LLM)" pendingLabel="Generating…" className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
-              </form>
-              <form action={researchCandidatesAction.bind(null, projectId)}>
-                <SubmitButton label="Research" pendingLabel="Researching…" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.98] disabled:opacity-50" />
-              </form>
-              <form action={scoreAndTierProjectAction.bind(null, projectId)}>
-                <SubmitButton label="Score & Tier" pendingLabel="Scoring…" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.98] disabled:opacity-50" />
-              </form>
+              <ActionButton action={generateCandidatesAction.bind(null, projectId)} label="Generate (LLM)" pendingLabel="Generating…" className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
+              <ActionButton action={researchCandidatesAction.bind(null, projectId)} label="Research" pendingLabel="Researching…" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.98] disabled:opacity-50" />
+              <ActionButton action={scoreAndTierProjectAction.bind(null, projectId)} label="Score & Tier" pendingLabel="Scoring…" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.98] disabled:opacity-50" />
               <Link
                 href={`/projects/${projectId}/results`}
                 className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
@@ -221,9 +216,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                 Results
               </Link>
               {project.candidates.length > 0 && (
-                <form action={clearAllCandidatesAction.bind(null, projectId)}>
-                  <SubmitButton label="Clear all" pendingLabel="Clearing…" className="rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-600 shadow-sm transition-all duration-200 hover:border-red-300 hover:bg-red-50 active:scale-[0.98] disabled:opacity-50" />
-                </form>
+                <ActionButton action={clearAllCandidatesAction.bind(null, projectId)} label="Clear all" pendingLabel="Clearing…" className="rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-600 shadow-sm transition-all duration-200 hover:border-red-300 hover:bg-red-50 active:scale-[0.98] disabled:opacity-50" />
               )}
             </div>
           </div>
