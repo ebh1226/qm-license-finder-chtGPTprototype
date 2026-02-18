@@ -47,7 +47,8 @@ export async function getOrCreateSingleUser(): Promise<AuthUser> {
 export async function getAuthUser(): Promise<AuthUser | null> {
   const c = await cookies();
   const raw = c.get(COOKIE_NAME)?.value;
-  if (!raw) { console.log("[auth] no cookie found"); return null; }
+  const allNames = c.getAll().map((ck) => ck.name);
+  if (!raw) { console.log("[auth] no cookie found. All cookies:", allNames); return null; }
 
   const secret = process.env.AUTH_SECRET;
   if (!secret) { console.log("[auth] AUTH_SECRET not set"); return null; }
@@ -116,6 +117,7 @@ export async function loginWithPassword(password: string): Promise<void> {
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
+  console.log("[auth] cookie set for user", user.id, "secure:", process.env.NODE_ENV === "production");
 }
 
 export async function logout(): Promise<void> {
