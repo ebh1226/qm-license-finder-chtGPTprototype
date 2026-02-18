@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { safeParseJson, toScoreCardView } from "@/lib/db";
+import SubmitButton from "@/components/SubmitButton";
 import {
   generateOutreachForATierAction,
   generateOutreachForCandidateAction,
@@ -61,14 +62,10 @@ export default async function ResultsPage({ params }: { params: Promise<{ projec
         </div>
         <div className="flex flex-wrap gap-3">
           <form action={scoreAndTierProjectAction.bind(null, projectId)}>
-            <button type="submit" className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.98]">
-              Re-score & tier
-            </button>
+            <SubmitButton label="Re-score & tier" pendingLabel="Scoring…" className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.98] disabled:opacity-50" />
           </form>
           <form action={generateOutreachForATierAction.bind(null, projectId)}>
-            <button type="submit" className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98]">
-              Generate outreach for A-tier
-            </button>
+            <SubmitButton label="Generate outreach for A-tier" pendingLabel="Generating outreach…" className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
           </form>
           <a
             href={`/api/projects/${projectId}/export.csv`}
@@ -146,9 +143,7 @@ export default async function ResultsPage({ params }: { params: Promise<{ projec
             />
           </label>
           <div className="md:col-span-3">
-            <button type="submit" className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98]">
-              Save feedback
-            </button>
+            <SubmitButton label="Save feedback" pendingLabel="Saving…" className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
           </div>
         </form>
       </section>
@@ -228,9 +223,7 @@ function CandidateCard({ c, projectId }: { c: any; projectId: string }) {
             <Badge tone="green">Outreach ready</Badge>
           ) : (
             <form action={generateOutreachForCandidateAction.bind(null, c.id)}>
-              <button type="submit" className="rounded-lg bg-gradient-to-r from-indigo-500 to-violet-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-110 active:scale-[0.98]">
-                Generate outreach
-              </button>
+              <SubmitButton label="Generate outreach" pendingLabel="Generating…" className="rounded-lg bg-gradient-to-r from-indigo-500 to-violet-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
             </form>
           )}
         </div>
@@ -344,9 +337,7 @@ function CandidateCard({ c, projectId }: { c: any; projectId: string }) {
             className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             placeholder="Reason (optional)"
           />
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-110 active:scale-[0.98]">
-            Save
-          </button>
+          <SubmitButton label="Save" pendingLabel="Saving…" className="rounded-lg bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
         </form>
       </details>
     </div>

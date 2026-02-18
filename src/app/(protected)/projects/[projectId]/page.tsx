@@ -13,6 +13,7 @@ import {
 } from "@/app/(protected)/projects/actions";
 import { parseExcludeList } from "@/lib/utils";
 import CandidateTable from "./CandidateTable";
+import SubmitButton from "@/components/SubmitButton";
 
 function completeness(p: {
   brandCategory?: string | null;
@@ -187,9 +188,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           </label>
 
           <div className="md:col-span-2 flex items-center gap-4">
-            <button type="submit" className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/30 hover:brightness-110 active:scale-[0.98]">
-              Save intake
-            </button>
+            <SubmitButton label="Save intake" pendingLabel="Saving…" className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/30 hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
             <Link
               href={`/projects/${projectId}/results`}
               className="rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.98]"
@@ -207,19 +206,13 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             <h2 className="text-base font-semibold text-slate-900">Candidates</h2>
             <div className="flex flex-wrap gap-2">
               <form action={generateCandidatesAction.bind(null, projectId)}>
-                <button type="submit" className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98]">
-                  Generate (LLM)
-                </button>
+                <SubmitButton label="Generate (LLM)" pendingLabel="Generating…" className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
               </form>
               <form action={researchCandidatesAction.bind(null, projectId)}>
-                <button type="submit" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.98]">
-                  Research
-                </button>
+                <SubmitButton label="Research" pendingLabel="Researching…" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.98] disabled:opacity-50" />
               </form>
               <form action={scoreAndTierProjectAction.bind(null, projectId)}>
-                <button type="submit" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.98]">
-                  Score & Tier
-                </button>
+                <SubmitButton label="Score & Tier" pendingLabel="Scoring…" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.98] disabled:opacity-50" />
               </form>
               <Link
                 href={`/projects/${projectId}/results`}
@@ -229,9 +222,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
               </Link>
               {project.candidates.length > 0 && (
                 <form action={clearAllCandidatesAction.bind(null, projectId)}>
-                  <button type="submit" className="rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-600 shadow-sm transition-all duration-200 hover:border-red-300 hover:bg-red-50 active:scale-[0.98]">
-                    Clear all
-                  </button>
+                  <SubmitButton label="Clear all" pendingLabel="Clearing…" className="rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-600 shadow-sm transition-all duration-200 hover:border-red-300 hover:bg-red-50 active:scale-[0.98] disabled:opacity-50" />
                 </form>
               )}
             </div>
@@ -281,9 +272,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                 className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 rows={3}
               />
-              <button type="submit" className="w-full rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98]">
-                Add
-              </button>
+              <SubmitButton label="Add" pendingLabel="Adding…" className="w-full rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
               <p className="text-xs text-slate-500">Exclude List is applied automatically.</p>
             </form>
           </div>
@@ -293,9 +282,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             <p className="mt-2 text-xs text-slate-500">Columns: name/company (required). Any additional columns (website, notes, links, or anything else) will be preserved and used in scoring.</p>
             <form action={uploadCandidatesCsvAction.bind(null, projectId)} className="mt-4 space-y-3">
               <input type="file" name="file" accept=".csv,text/csv" className="w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100" required />
-              <button type="submit" className="w-full rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98]">
-                Upload
-              </button>
+              <SubmitButton label="Upload" pendingLabel="Uploading…" className="w-full rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
             </form>
           </div>
 

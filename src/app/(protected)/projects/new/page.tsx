@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createProjectAction } from "@/app/(protected)/projects/actions";
+import SubmitButton from "@/components/SubmitButton";
 
 export default function NewProjectPage() {
   return (
@@ -100,9 +101,7 @@ export default function NewProjectPage() {
         </div>
 
         <div className="flex gap-4">
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/30 hover:brightness-110 active:scale-[0.98]">
-            Create project
-          </button>
+          <SubmitButton label="Create project" pendingLabel="Creating…" className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/30 hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
           <Link href="/projects" className="rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]">
             Cancel
           </Link>
