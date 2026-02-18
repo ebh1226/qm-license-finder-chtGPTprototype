@@ -1,7 +1,6 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 
 export default function ActionButton({
   action,
@@ -15,7 +14,6 @@ export default function ActionButton({
   className?: string;
 }) {
   const [isPending, startTransition] = useTransition();
-  const router = useRouter();
 
   return (
     <button
@@ -24,7 +22,6 @@ export default function ActionButton({
       onClick={() => {
         startTransition(async () => {
           await action();
-          router.refresh();
         });
       }}
     >
