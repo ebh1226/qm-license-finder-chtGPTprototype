@@ -47,26 +47,30 @@ export async function getOrCreateSingleUser(): Promise<AuthUser> {
 export async function getAuthUser(): Promise<AuthUser | null> {
   const c = await cookies();
   const raw = c.get(COOKIE_NAME)?.value;
-  if (!raw) return null;
+  if (!raw) { console.log("[auth] no cookie found"); return null; }
 
   const secret = process.env.AUTH_SECRET;
-  if (!secret) return null;
+  if (!secret) { console.log("[auth] AUTH_SECRET not set"); return null; }
 
   const [payloadB64, sig] = raw.split(".");
-  if (!payloadB64 || !sig) return null;
+  if (!payloadB64 || !sig) { console.log("[auth] malformed cookie"); return null; }
 
   const expected = hmac(payloadB64, secret);
-  if (!timingSafeEqual(expected, sig)) return null;
+  if (!timingSafeEqual(expected, sig)) { console.log("[auth] HMAC mismatch"); return null; }
 
   let payload: SessionPayload;
   try {
     payload = JSON.parse(base64UrlDecode(payloadB64)) as SessionPayload;
   } catch {
+    console.log("[auth] payload parse failed");
     return null;
   }
 
   const now = Math.floor(Date.now() / 1000);
-  if (!payload?.userId || !payload?.exp || payload.exp < now) return null;
+  if (!payload?.userId || !payload?.exp || payload.exp < now) {
+    console.log("[auth] expired or missing fields", { userId: !!payload?.userId, exp: payload?.exp, now });
+    return null;
+  }
 
   return { id: payload.userId };
 }
