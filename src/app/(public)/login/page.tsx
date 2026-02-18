@@ -1,14 +1,4 @@
-import { loginWithPassword } from "@/lib/auth";
-import { redirect } from "next/navigation";
-
 export default function LoginPage() {
-  async function action(formData: FormData) {
-    "use server";
-    const password = String(formData.get("password") || "");
-    await loginWithPassword(password);
-    redirect("/projects");
-  }
-
   return (
     <div className="min-h-dvh bg-gradient-to-br from-slate-50 via-indigo-50/30 to-violet-50/30">
       <div className="mx-auto max-w-md pt-24">
@@ -20,7 +10,7 @@ export default function LoginPage() {
             Single-user beta login. This prototype does not send emails and does not scrape.
           </p>
 
-          <form action={action} className="mt-8 space-y-4">
+          <form action="/api/login" method="POST" className="mt-8 space-y-4">
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Password</span>
               <input
