@@ -58,6 +58,11 @@ model Project {
   constraints              String?
   excludeList              String?  // one per line
 
+  // Brand context fields
+  brandBackground          String?  // multi-line: brand history, positioning, demographics
+  brandWebsite             String?  // primary URL for initial crawl
+  brandContextText         String?  // extracted text from uploaded PDF/PPT/DOCX brand docs
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -9,6 +9,7 @@ import {
   researchCandidatesAction,
   scoreAndTierProjectAction,
   updateProjectAction,
+  uploadBrandDocumentAction,
   uploadCandidatesCsvAction,
 } from "@/app/(protected)/projects/actions";
 import { parseExcludeList } from "@/lib/utils";
@@ -24,6 +25,8 @@ function completeness(p: {
   geography?: string | null;
   positioningKeywords?: string | null;
   constraints?: string | null;
+  brandBackground?: string | null;
+  brandWebsite?: string | null;
 }) {
   const required = [
     { key: "brandCategory", label: "Brand category" },
@@ -40,6 +43,8 @@ function completeness(p: {
     { key: "geography", label: "Geography" },
     { key: "positioningKeywords", label: "Positioning keywords" },
     { key: "constraints", label: "Constraints" },
+    { key: "brandBackground", label: "Brand background" },
+    { key: "brandWebsite", label: "Brand website" },
   ] as const;
 
   const niceMissing = nice.filter((r) => !(p as any)[r.key]).map((r) => r.label);
@@ -130,6 +135,22 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           <label className="block">
             <span className="text-sm font-medium text-slate-700">Brand category</span>
             <input name="brandCategory" defaultValue={project.brandCategory ?? ""} className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-slate-700">Brand website <span className="font-normal text-slate-400">(optional)</span></span>
+            <input name="brandWebsite" type="url" defaultValue={project.brandWebsite ?? ""} className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="https://www.yourbrand.com" />
+          </label>
+
+          <label className="block md:col-span-2">
+            <span className="text-sm font-medium text-slate-700">Brand background <span className="font-normal text-slate-400">(optional)</span></span>
+            <textarea
+              name="brandBackground"
+              defaultValue={project.brandBackground ?? ""}
+              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              rows={5}
+              placeholder="Brand history, positioning, series details, target demographics — the more context, the better the research quality."
+            />
           </label>
 
           <label className="block">
@@ -271,11 +292,25 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           </div>
 
           <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-900">Upload CSV</h3>
-            <p className="mt-2 text-xs text-slate-500">Columns: name/company (required). Any additional columns (website, notes, links, or anything else) will be preserved and used in scoring.</p>
+            <h3 className="text-sm font-semibold text-slate-900">Upload candidate list</h3>
+            <p className="mt-2 text-xs text-slate-500">CSV or Excel (.xlsx). Columns: name/company (required). Any additional columns will be preserved and used in scoring.</p>
             <form action={uploadCandidatesCsvAction.bind(null, projectId)} className="mt-4 space-y-3">
-              <input type="file" name="file" accept=".csv,text/csv" className="w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100" required />
+              <input type="file" name="file" accept=".csv,text/csv,.xlsx,.xls" className="w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100" required />
               <SubmitButton label="Upload" pendingLabel="Uploading…" className="w-full rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
+            </form>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+            <h3 className="text-sm font-semibold text-slate-900">Upload brand document</h3>
+            <p className="mt-2 text-xs text-slate-500">PDF, PPTX, DOCX, or TXT. Extracted text is included as ground-truth context in all LLM prompts for this project.</p>
+            {project.brandContextText && (
+              <p className="mt-2 text-xs font-medium text-emerald-700">
+                Document loaded — {project.brandContextText.length.toLocaleString()} chars extracted.
+              </p>
+            )}
+            <form action={uploadBrandDocumentAction.bind(null, projectId)} className="mt-4 space-y-3">
+              <input type="file" name="file" accept=".pdf,.pptx,.ppt,.docx,.txt" className="w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-violet-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-violet-700 hover:file:bg-violet-100" required />
+              <SubmitButton label="Upload document" pendingLabel="Extracting…" className="w-full rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-violet-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
             </form>
           </div>
 

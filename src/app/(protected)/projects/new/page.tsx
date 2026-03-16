@@ -21,7 +21,7 @@ export default function NewProjectPage() {
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
           <h2 className="text-base font-semibold text-slate-900">Basic Information</h2>
           <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
-            <label className="block">
+            <label className="block md:col-span-2">
               <span className="text-sm font-medium text-slate-700">Project name</span>
               <input
                 name="name"
@@ -37,6 +37,25 @@ export default function NewProjectPage() {
                 className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 placeholder="e.g. Premium outdoor lifestyle brand (Yeti/Patagonia aesthetic)"
               />
+            </label>
+            <label className="block">
+              <span className="text-sm font-medium text-slate-700">Brand website <span className="font-normal text-slate-400">(optional)</span></span>
+              <input
+                name="brandWebsite"
+                type="url"
+                className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                placeholder="e.g. https://www.yourbrand.com"
+              />
+            </label>
+            <label className="block md:col-span-2">
+              <span className="text-sm font-medium text-slate-700">Brand background <span className="font-normal text-slate-400">(optional)</span></span>
+              <textarea
+                name="brandBackground"
+                className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                rows={5}
+                placeholder="e.g. Bread Barbershop is an animated four-season series targeting 4-8 year olds with a multicultural audience. The brand launched in 2022, has strong social media traction, and is positioned around creativity, confidence, and self-expression. Target demographics skew female-leaning with household incomes of $60K+."
+              />
+              <p className="mt-2 text-xs text-slate-500">Brand history, positioning, target demographics, series details — the more context, the better the research quality.</p>
             </label>
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Product types sought</span>

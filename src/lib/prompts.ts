@@ -18,11 +18,14 @@ export function candidateGenerationUserPrompt(input: {
   geography?: string | null;
   positioningKeywords?: string | null;
   constraints?: string | null;
+  brandBackground?: string | null;
+  brandWebsite?: string | null;
+  brandContextText?: string | null;
   excludeList?: string[];
 }): string {
   const ex = input.excludeList && input.excludeList.length ? input.excludeList.join(", ") : "(none)";
 
-  return [
+  const lines = [
     "Generate a list of candidate companies that could be strong licensee/manufacturer partners.",
     "Optimize for NON-OBVIOUS names (avoid giants / usual suspects) and specialty/boutique distribution alignment.",
     "Avoid mass market oriented companies unless you flag as a risk.",
@@ -35,10 +38,24 @@ export function candidateGenerationUserPrompt(input: {
     `- Geography: ${input.geography ?? "(optional)"}`,
     `- Positioning keywords: ${input.positioningKeywords ?? "(optional)"}`,
     `- Constraints: ${input.constraints ?? "(optional)"}`,
+    `- Brand background: ${input.brandBackground ?? "(none)"}`,
+    `- Brand website: ${input.brandWebsite ?? "(none)"}`,
     `- Exclude list (do not include these): ${ex}`,
+  ];
+
+  if (input.brandContextText?.trim()) {
+    lines.push(
+      "\nBrand context (from uploaded brand document — use as ground truth):",
+      clampText(input.brandContextText.trim(), 2000),
+    );
+  }
+
+  lines.push(
     "\nOutput JSON schema:",
     "{ candidates: [{ name: string, website?: string|null, notes?: string|null, whyNonObvious?: string|null }, ...] }",
-  ].join("\n");
+  );
+
+  return lines.join("\n");
 }
 
 export function scoreCandidateUserPrompt(input: {
@@ -50,6 +67,9 @@ export function scoreCandidateUserPrompt(input: {
     geography?: string | null;
     positioningKeywords?: string | null;
     constraints?: string | null;
+    brandBackground?: string | null;
+    brandWebsite?: string | null;
+    brandContextText?: string | null;
   };
   candidate: {
     name: string;
@@ -85,7 +105,7 @@ export function scoreCandidateUserPrompt(input: {
     } catch { /* ignore malformed JSON */ }
   }
 
-  return [
+  const scoreLines = [
     "Score the candidate for licensing partner fit for this project.",
     "You MUST follow the scoring criteria and constraints.",
     "Evidence sources include: link-supported evidence bullets, user-provided notes, and additional user-provided data fields. All of these count as real evidence when assessing the evidence level.",
@@ -100,8 +120,19 @@ export function scoreCandidateUserPrompt(input: {
     `- Geography: ${input.project.geography ?? "(optional)"}`,
     `- Positioning keywords: ${input.project.positioningKeywords ?? "(optional)"}`,
     `- Constraints: ${input.project.constraints ?? "(optional)"}`,
-    "\nCandidate:",
-    ...candidateLines,
+    `- Brand background: ${input.project.brandBackground ?? "(none)"}`,
+    `- Brand website: ${input.project.brandWebsite ?? "(none)"}`,
+  ];
+
+  if (input.project.brandContextText?.trim()) {
+    scoreLines.push(
+      "\nBrand context (from uploaded brand document — treat as ground truth when evaluating fit):",
+      clampText(input.project.brandContextText.trim(), 3000),
+    );
+  }
+
+  scoreLines.push("\nCandidate:", ...candidateLines);
+  scoreLines.push(
     "\nEvidence bullets (user-provided, link-supported):",
     ev,
     "\nScoring criteria (0-5 each): categoryFit, distributionAlignment, recent licensing activity, scale appropriateness, quality/reputation, geo coverage, recent momentum, manufacturing capability.",
@@ -114,7 +145,8 @@ export function scoreCandidateUserPrompt(input: {
     "Use these exact phrases as disqualifier strings so they can be detected programmatically.",
     "\nOutput JSON schema:",
     "{\n  criterionScores: { categoryFit: int, distributionAlignment: int, licensingActivity: int, scaleAppropriateness: int, qualityReputation: int, geoCoverage: int, recentMomentum: int, manufacturingCapability: int },\n  disqualifiers: string[],\n  flags: string[],\n  rationaleBullets: string[3-5],\n  proofPoints: [{ text: string, supportType: 'link_supported'|'user_provided_excerpt'|'to_verify'|'assumed', url?: string|null }, ...],\n  confidence: 'High'|'Medium'|'Low',\n  nextStep: string\n}",
-  ].join("\n");
+  );
+  return scoreLines.join("\n");
 }
 
 export function candidateResearchUserPrompt(input: {
@@ -123,8 +155,10 @@ export function candidateResearchUserPrompt(input: {
   candidateNotes?: string | null;
   brandCategory?: string | null;
   productTypeSought?: string | null;
+  brandBackground?: string | null;
+  brandWebsite?: string | null;
 }): string {
-  return [
+  const lines = [
     "Research the following company as a potential licensing partner.",
     "Return what you know about this company. Do NOT invent facts — only include information you are confident about.",
     "If you are not confident about a field, return null for that field.",
@@ -137,10 +171,13 @@ export function candidateResearchUserPrompt(input: {
     "Context for search query generation:",
     `- Brand category: ${input.brandCategory ?? "(unknown)"}`,
     `- Product types sought: ${input.productTypeSought ?? "(unknown)"}`,
+    `- Brand background: ${input.brandBackground ?? "(none)"}`,
+    `- Brand website: ${input.brandWebsite ?? "(none)"}`,
     "",
     "Output JSON schema:",
     "{ website?: string|null, description?: string|null, category?: string|null, licensingHistory?: string|null, keyProducts?: string|null, distributionChannels?: string|null, notablePartnerships?: string|null, searchQueries: string[1-3] }",
-  ].join("\n");
+  ];
+  return lines.join("\n");
 }
 
 export function evidenceSummaryUserPrompt(input: { url: string; text: string; kind: "fetched" | "excerpt" }): string {

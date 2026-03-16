@@ -42,6 +42,8 @@ function projectBrief(p: {
   geography?: string | null;
   positioningKeywords?: string | null;
   constraints?: string | null;
+  brandBackground?: string | null;
+  brandWebsite?: string | null;
 }): string {
   return [
     `Brand category: ${p.brandCategory ?? "(missing)"}`,
@@ -51,7 +53,9 @@ function projectBrief(p: {
     `Geography: ${p.geography ?? "(optional)"}`,
     `Positioning keywords: ${p.positioningKeywords ?? "(optional)"}`,
     `Constraints: ${p.constraints ?? "(optional)"}`,
-  ].join("\n");
+    p.brandBackground ? `Brand background: ${p.brandBackground}` : null,
+    p.brandWebsite ? `Brand website: ${p.brandWebsite}` : null,
+  ].filter(Boolean).join("\n");
 }
 
 export async function createProjectAction(formData: FormData) {
@@ -70,6 +74,8 @@ export async function createProjectAction(formData: FormData) {
       positioningKeywords: nullIfEmpty(formData.get("positioningKeywords")),
       constraints: nullIfEmpty(formData.get("constraints")),
       excludeList: nullIfEmpty(formData.get("excludeList")),
+      brandBackground: nullIfEmpty(formData.get("brandBackground")),
+      brandWebsite: nullIfEmpty(formData.get("brandWebsite")),
     },
     select: { id: true },
   });
@@ -98,6 +104,8 @@ export async function updateProjectAction(projectId: string, formData: FormData)
       positioningKeywords: nullIfEmpty(formData.get("positioningKeywords")),
       constraints: nullIfEmpty(formData.get("constraints")),
       excludeList: nullIfEmpty(formData.get("excludeList")),
+      brandBackground: nullIfEmpty(formData.get("brandBackground")),
+      brandWebsite: nullIfEmpty(formData.get("brandWebsite")),
     },
   });
 
@@ -134,13 +142,62 @@ export async function addCandidateAction(projectId: string, formData: FormData) 
   revalidatePath(`/projects/${projectId}`);
 }
 
+export async function uploadBrandDocumentAction(projectId: string, formData: FormData) {
+  await requireAuth();
+
+  const file = formData.get("file");
+  if (!(file instanceof File)) return;
+
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  let extractedText = "";
+
+  try {
+    if (ext === "pdf" || ext === "pptx" || ext === "ppt" || ext === "docx") {
+      const { OfficeParser } = await import("officeparser");
+      const ast = await OfficeParser.parseOffice(buffer);
+      extractedText = ast.toText();
+    } else if (ext === "txt") {
+      extractedText = buffer.toString("utf-8");
+    } else {
+      return;
+    }
+  } catch (err) {
+    console.error("Failed to extract text from brand document:", err);
+    return;
+  }
+
+  if (!extractedText.trim()) return;
+
+  await prisma.project.update({
+    where: { id: projectId },
+    data: { brandContextText: clampText(extractedText.trim(), 15000) },
+  });
+
+  revalidatePath(`/projects/${projectId}`);
+}
+
 export async function uploadCandidatesCsvAction(projectId: string, formData: FormData) {
   await requireAuth();
 
   const file = formData.get("file");
   if (!(file instanceof File)) return;
 
-  const text = await file.text();
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  let text: string;
+
+  if (ext === "xlsx" || ext === "xls") {
+    const { read: xlsxRead, utils: xlsxUtils } = await import("xlsx");
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const workbook = xlsxRead(buffer, { type: "buffer" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    text = xlsxUtils.sheet_to_csv(sheet);
+  } else {
+    text = await file.text();
+  }
+
   const rows = parseCsvCandidates(text);
   if (!rows.length) return;
 
@@ -198,7 +255,7 @@ export async function clearAllCandidatesAction(projectId: string) {
 // Internal helper: research a single candidate (LLM knowledge + web search + evidence summarization)
 async function researchSingleCandidate(
   candidate: { id: string; name: string; website: string | null; notes: string | null },
-  projectContext: { brandCategory: string | null; productTypeSought: string | null },
+  projectContext: { brandCategory: string | null; productTypeSought: string | null; brandBackground?: string | null; brandWebsite?: string | null },
 ) {
   // --- PHASE 1: LLM Knowledge ---
   const system = systemPreamble();
@@ -208,6 +265,8 @@ async function researchSingleCandidate(
     candidateNotes: candidate.notes,
     brandCategory: projectContext.brandCategory,
     productTypeSought: projectContext.productTypeSought,
+    brandBackground: projectContext.brandBackground,
+    brandWebsite: projectContext.brandWebsite,
   });
 
   const { data: research } = await runStructured({
@@ -333,7 +392,7 @@ export async function researchCandidatesBatchAction(projectId: string, candidate
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
-    select: { brandCategory: true, productTypeSought: true },
+    select: { brandCategory: true, productTypeSought: true, brandBackground: true, brandWebsite: true },
   });
   if (!project) return;
 
@@ -370,6 +429,9 @@ export async function generateCandidatesAction(projectId: string) {
       positioningKeywords: true,
       constraints: true,
       excludeList: true,
+      brandBackground: true,
+      brandWebsite: true,
+      brandContextText: true,
     },
   });
   if (!project) return;
@@ -487,7 +549,7 @@ export async function summarizeEvidenceLinkAction(evidenceLinkId: string) {
 // Internal helper: score a single candidate
 async function scoreSingleCandidate(
   candidate: { id: string; name: string; website: string | null; notes: string | null; customData: string | null; evidenceLinks: Array<{ id: string; url: string; summaryJson: string | null; fetchedText: string | null; excerpt: string | null; candidateId: string; createdAt: Date; updatedAt: Date }> },
-  project: { brandCategory: string | null; productTypeSought: string | null; priceRange: string | null; distributionPreference: string | null; geography: string | null; positioningKeywords: string | null; constraints: string | null },
+  project: { brandCategory: string | null; productTypeSought: string | null; priceRange: string | null; distributionPreference: string | null; geography: string | null; positioningKeywords: string | null; constraints: string | null; brandBackground?: string | null; brandWebsite?: string | null; brandContextText?: string | null },
 ) {
   if (!candidate.name.trim()) return;
 
@@ -658,6 +720,7 @@ export async function scoreAndTierCandidatesBatchAction(projectId: string, candi
     select: {
       brandCategory: true, productTypeSought: true, priceRange: true,
       distributionPreference: true, geography: true, positioningKeywords: true, constraints: true,
+      brandBackground: true, brandWebsite: true, brandContextText: true,
     },
   });
   if (!project) return;
