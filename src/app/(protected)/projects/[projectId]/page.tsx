@@ -47,7 +47,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             href={`/projects/${projectId}/candidates`}
             className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98]"
           >
-            Manage candidates →
+            Continue →
           </Link>
           <Link
             href={`/projects/${projectId}/results`}
@@ -150,7 +150,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                 href={`/projects/${projectId}/candidates`}
                 className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-110"
               >
-                Manage →
+                Continue →
               </Link>
             </div>
             <div className="mt-4">
