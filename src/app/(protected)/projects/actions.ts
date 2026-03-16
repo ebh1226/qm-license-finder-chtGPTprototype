@@ -80,7 +80,7 @@ export async function createProjectAction(formData: FormData) {
     select: { id: true },
   });
 
-  redirect(`/projects/${project.id}`);
+  redirect(`/projects/${project.id}/setup`);
 }
 
 export async function deleteProjectAction(projectId: string) {
@@ -171,9 +171,19 @@ export async function uploadBrandDocumentAction(projectId: string, formData: For
 
   if (!extractedText.trim()) return;
 
+  // Append to any existing extracted text so multiple uploads accumulate
+  const existing = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { brandContextText: true },
+  });
+  const prior = existing?.brandContextText?.trim() ?? "";
+  const combined = prior
+    ? `${prior}\n\n---\n\n${extractedText.trim()}`
+    : extractedText.trim();
+
   await prisma.project.update({
     where: { id: projectId },
-    data: { brandContextText: clampText(extractedText.trim(), 15000) },
+    data: { brandContextText: clampText(combined, 15000) },
   });
 
   revalidatePath(`/projects/${projectId}`);
