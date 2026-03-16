@@ -7,9 +7,9 @@ import ActionButton from "@/components/ActionButton";
 
 function Field({ label, value }: { label: string; value?: string | null }) {
   return (
-    <div>
+    <div className="min-w-0">
       <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 text-sm text-slate-800">{value || <span className="italic text-slate-400">—</span>}</p>
+      <p className="mt-1 text-sm text-slate-800 break-all">{value || <span className="italic text-slate-400">—</span>}</p>
     </div>
   );
 }

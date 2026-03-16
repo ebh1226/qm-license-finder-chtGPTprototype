@@ -173,9 +173,8 @@ export async function uploadBrandDocumentAction(projectId: string, formData: For
 
   try {
     if (ext === "pdf" || ext === "pptx" || ext === "ppt" || ext === "docx") {
-      const { OfficeParser } = await import("officeparser");
-      const ast = await OfficeParser.parseOffice(buffer);
-      extractedText = ast.toText();
+      const { parseOffice } = await import("officeparser");
+      extractedText = await parseOffice(buffer);
     } else if (ext === "txt") {
       extractedText = buffer.toString("utf-8");
     } else {
