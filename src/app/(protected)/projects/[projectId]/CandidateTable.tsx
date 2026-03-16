@@ -85,7 +85,7 @@ export default function CandidateTable({
     <>
       {/* Selection action bar */}
       {someSelected && (
-        <div className="mb-3 flex items-center gap-3 rounded-xl border border-indigo-200/80 bg-gradient-to-r from-indigo-50 to-violet-50 px-4 py-3">
+        <div className="sticky top-0 z-10 mb-3 flex items-center gap-3 rounded-xl border border-indigo-200/80 bg-gradient-to-r from-indigo-50 to-violet-50 px-4 py-3 shadow-md">
           <span className="text-sm font-medium text-indigo-700">
             {selected.size} selected
           </span>
