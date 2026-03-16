@@ -343,9 +343,12 @@ async function researchSingleCandidate(
   // Auto-fill website if not already set
   const updatedWebsite = candidate.website || normalizeUrl(research.website ?? null);
 
-  // Merge LLM knowledge into notes (preserve existing notes)
+  // Merge LLM knowledge into notes (preserve existing notes).
+  // Skip description if notes already exist — generated/manual notes cover the same
+  // ground and concatenating causes visible repetition in the UI.
+  const hasExistingNotes = !!candidate.notes?.trim();
   const knowledgeParts = [
-    research.description,
+    !hasExistingNotes ? research.description : null,
     research.category ? `Category: ${research.category}` : null,
     research.licensingHistory ? `Licensing: ${research.licensingHistory}` : null,
     research.keyProducts ? `Products: ${research.keyProducts}` : null,
