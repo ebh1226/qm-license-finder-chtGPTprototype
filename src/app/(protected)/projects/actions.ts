@@ -172,9 +172,27 @@ export async function uploadBrandDocumentAction(projectId: string, formData: For
   let extractedText = "";
 
   try {
-    if (ext === "pdf" || ext === "pptx" || ext === "ppt" || ext === "docx") {
+    if (ext === "pdf") {
+      // pdf2json is a pure Node.js PDF parser — no browser APIs required
+      const PDFParser = (await import("pdf2json")).default;
+      extractedText = await new Promise<string>((resolve, reject) => {
+        const parser = new PDFParser();
+        parser.on("pdfParser_dataReady", (data: { Pages?: Array<{ Texts?: Array<{ R?: Array<{ T?: string }> }> }> }) => {
+          const pages = data?.Pages ?? [];
+          const text = pages
+            .flatMap((p) => p.Texts ?? [])
+            .flatMap((t) => t.R ?? [])
+            .map((r) => decodeURIComponent(r.T ?? ""))
+            .join(" ");
+          resolve(text);
+        });
+        parser.on("pdfParser_dataError", reject);
+        parser.parseBuffer(buffer);
+      });
+    } else if (ext === "pptx" || ext === "ppt" || ext === "docx") {
       const { parseOffice } = await import("officeparser");
-      extractedText = await parseOffice(buffer);
+      const ast = await parseOffice(buffer);
+      extractedText = ast.toText();
     } else if (ext === "txt") {
       extractedText = buffer.toString("utf-8");
     } else {
