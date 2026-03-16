@@ -46,7 +46,7 @@ export function candidateGenerationUserPrompt(input: {
   if (input.brandContextText?.trim()) {
     lines.push(
       "\nBrand context (from uploaded brand document — use as ground truth):",
-      clampText(input.brandContextText.trim(), 2000),
+      clampText(input.brandContextText.trim(), 6000),
     );
   }
 
@@ -127,7 +127,7 @@ export function scoreCandidateUserPrompt(input: {
   if (input.project.brandContextText?.trim()) {
     scoreLines.push(
       "\nBrand context (from uploaded brand document — treat as ground truth when evaluating fit):",
-      clampText(input.project.brandContextText.trim(), 3000),
+      clampText(input.project.brandContextText.trim(), 10000),
     );
   }
 

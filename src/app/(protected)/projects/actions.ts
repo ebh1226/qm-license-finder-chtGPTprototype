@@ -183,7 +183,7 @@ export async function uploadBrandDocumentAction(projectId: string, formData: For
 
   await prisma.project.update({
     where: { id: projectId },
-    data: { brandContextText: clampText(combined, 15000) },
+    data: { brandContextText: clampText(combined, 30000) },
   });
 
   revalidatePath(`/projects/${projectId}`);
