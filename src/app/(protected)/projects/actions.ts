@@ -173,23 +173,31 @@ export async function uploadBrandDocumentAction(projectId: string, formData: For
 
   try {
     if (ext === "pdf") {
-      // pdf2json is a pure Node.js PDF parser — no browser APIs required
-      const PDFParser = (await import("pdf2json")).default;
-      extractedText = await new Promise<string>((resolve, reject) => {
-        const parser = new PDFParser();
-        parser.on("pdfParser_dataReady", (data: { Pages?: Array<{ Texts?: Array<{ R?: Array<{ T?: string }> }> }> }) => {
-          const pages = data?.Pages ?? [];
-          const text = pages
-            .flatMap((p) => p.Texts ?? [])
-            .flatMap((t) => t.R ?? [])
-            .map((r) => decodeURIComponent(r.T ?? ""))
-            .join(" ");
-          resolve(text);
-        });
-        parser.on("pdfParser_dataError", reject);
-        parser.parseBuffer(buffer);
+      // Use Gemini API to extract text from PDFs — pdfjs-based libraries require
+      // browser APIs (DOMMatrix) not available in Node.js 20.
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) throw new Error("No GEMINI_API_KEY configured");
+      const model = (process.env.GEMINI_MODEL || "gemini-2.0-flash").trim();
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            role: "user",
+            parts: [
+              { inlineData: { mimeType: "application/pdf", data: buffer.toString("base64") } },
+              { text: "Extract all text from this document. Return only the raw text content, preserving paragraph breaks. Do not add commentary." },
+            ],
+          }],
+          generationConfig: { temperature: 0 },
+        }),
       });
+      if (!resp.ok) throw new Error(`Gemini PDF extraction ${resp.status}`);
+      const data = (await resp.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+      extractedText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
     } else if (ext === "pptx" || ext === "ppt" || ext === "docx") {
+      // officeparser Node.js build handles DOCX/PPTX via zip+XML — no browser APIs needed
       const { parseOffice } = await import("officeparser");
       const ast = await parseOffice(buffer);
       extractedText = ast.toText();
