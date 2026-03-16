@@ -184,6 +184,7 @@ export function evidenceSummaryUserPrompt(input: { url: string; text: string; ki
   return [
     "Summarize the evidence text into 1-4 short bullets relevant to licensing partner fit.",
     "If the page contains no useful information about the company or licensing, return an empty bullets array.",
+    "If the content appears to be from before 2022 (check publication dates, article dates, or copyright years visible in the text), return an empty bullets array — outdated evidence is not useful.",
     "Do NOT add any facts not in the evidence text.",
     "Return JSON only.",
     `\nEvidence URL: ${input.url}`,

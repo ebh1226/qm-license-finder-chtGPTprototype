@@ -377,7 +377,7 @@ async function researchSingleCandidate(
   for (const query of research.searchQueries.slice(0, 3)) {
     await new Promise((r) => setTimeout(r, 500));
     try {
-      const results = await googleCustomSearch(query, 2);
+      const results = await googleCustomSearch(`${query} after:2022`, 2);
       for (const r of results) {
         const normalized = normalizeUrl(r.url);
         if (normalized && !allUrls.some((u) => u.url === normalized)) {
@@ -406,13 +406,17 @@ async function researchSingleCandidate(
           schema: EvidenceSummarySchema,
         });
 
-        await prisma.evidenceLink.update({
-          where: { id: link.id },
-          data: {
-            fetchedText: clampText(fetched.text, 12000),
-            summaryJson: JSON.stringify(summary.bullets),
-          },
-        });
+        if (summary.bullets.length === 0) {
+          await prisma.evidenceLink.delete({ where: { id: link.id } });
+        } else {
+          await prisma.evidenceLink.update({
+            where: { id: link.id },
+            data: {
+              fetchedText: clampText(fetched.text, 12000),
+              summaryJson: JSON.stringify(summary.bullets),
+            },
+          });
+        }
       }
 
       await new Promise((r) => setTimeout(r, 1000));
