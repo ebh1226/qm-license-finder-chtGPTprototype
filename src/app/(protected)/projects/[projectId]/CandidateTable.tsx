@@ -121,7 +121,7 @@ export default function CandidateTable({
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-slate-200/80">
+      <div className="overflow-x-auto rounded-xl border border-slate-200/80">
         <table className="w-full text-sm">
           <thead className="bg-gradient-to-r from-slate-50 to-slate-100 text-slate-700">
             <tr>

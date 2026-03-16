@@ -95,7 +95,7 @@ export default async function CandidatesPage({ params }: { params: Promise<{ pro
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
         {/* Candidate table */}
-        <div>
+        <div className="min-w-0">
           <CandidateTable candidates={project.candidates} projectId={projectId} />
         </div>
 

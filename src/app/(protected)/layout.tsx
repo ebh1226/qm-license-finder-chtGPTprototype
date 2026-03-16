@@ -5,7 +5,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   await requireAuth();
 
   return (
-    <div className="min-h-dvh bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 text-slate-900">
+    <div className="min-h-dvh overflow-x-hidden bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 text-slate-900">
       <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-4">
