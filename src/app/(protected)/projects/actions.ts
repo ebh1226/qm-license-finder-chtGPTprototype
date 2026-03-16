@@ -109,8 +109,7 @@ export async function updateProjectAction(projectId: string, formData: FormData)
     },
   });
 
-  revalidatePath(`/projects/${projectId}`);
-  revalidatePath(`/projects/${projectId}/results`);
+  redirect(`/projects/${projectId}`);
 }
 
 export async function addCandidateAction(projectId: string, formData: FormData) {
@@ -140,6 +139,24 @@ export async function addCandidateAction(projectId: string, formData: FormData) 
   });
 
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/candidates`);
+}
+
+// Recompute brandContextText from all ProjectDocument records for a project
+async function recomputeBrandContextText(projectId: string) {
+  const docs = await prisma.projectDocument.findMany({
+    where: { projectId },
+    orderBy: { createdAt: "asc" },
+    select: { extractedText: true },
+  });
+  const combined = docs
+    .map((d) => d.extractedText.trim())
+    .filter(Boolean)
+    .join("\n\n---\n\n");
+  await prisma.project.update({
+    where: { id: projectId },
+    data: { brandContextText: combined ? clampText(combined, 30000) : null },
+  });
 }
 
 export async function uploadBrandDocumentAction(projectId: string, formData: FormData) {
@@ -171,22 +188,33 @@ export async function uploadBrandDocumentAction(projectId: string, formData: For
 
   if (!extractedText.trim()) return;
 
-  // Append to any existing extracted text so multiple uploads accumulate
-  const existing = await prisma.project.findUnique({
-    where: { id: projectId },
-    select: { brandContextText: true },
-  });
-  const prior = existing?.brandContextText?.trim() ?? "";
-  const combined = prior
-    ? `${prior}\n\n---\n\n${extractedText.trim()}`
-    : extractedText.trim();
-
-  await prisma.project.update({
-    where: { id: projectId },
-    data: { brandContextText: clampText(combined, 30000) },
+  await prisma.projectDocument.create({
+    data: {
+      projectId,
+      filename: file.name,
+      extractedText: clampText(extractedText.trim(), 30000),
+    },
   });
 
+  await recomputeBrandContextText(projectId);
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/setup`);
+}
+
+export async function deleteProjectDocumentAction(documentId: string) {
+  await requireAuth();
+
+  const doc = await prisma.projectDocument.findUnique({
+    where: { id: documentId },
+    select: { projectId: true },
+  });
+  if (!doc) return;
+
+  await prisma.projectDocument.delete({ where: { id: documentId } });
+  await recomputeBrandContextText(doc.projectId);
+
+  revalidatePath(`/projects/${doc.projectId}`);
+  revalidatePath(`/projects/${doc.projectId}/setup`);
 }
 
 export async function uploadCandidatesCsvAction(projectId: string, formData: FormData) {
@@ -260,6 +288,7 @@ export async function clearAllCandidatesAction(projectId: string) {
   await requireAuth();
   await prisma.candidate.deleteMany({ where: { projectId } });
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/candidates`);
 }
 
 // Internal helper: research a single candidate (LLM knowledge + web search + evidence summarization)
@@ -394,6 +423,7 @@ export async function researchCandidatesAction(projectId: string) {
   }
 
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/candidates`);
 }
 
 export async function researchCandidatesBatchAction(projectId: string, candidateIds: string[]) {
@@ -423,6 +453,7 @@ export async function researchCandidatesBatchAction(projectId: string, candidate
   }
 
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/candidates`);
 }
 
 export async function generateCandidatesAction(projectId: string) {
@@ -486,6 +517,7 @@ export async function generateCandidatesAction(projectId: string) {
   }
 
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/candidates`);
 }
 
 export async function addEvidenceLinkAction(candidateId: string, formData: FormData) {
@@ -749,6 +781,7 @@ export async function scoreAndTierCandidatesBatchAction(projectId: string, candi
   await retierProject(projectId);
 
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/candidates`);
   revalidatePath(`/projects/${projectId}/results`);
 }
 
@@ -757,6 +790,7 @@ export async function deleteCandidatesBatchAction(projectId: string, candidateId
   if (!candidateIds.length) return;
   await prisma.candidate.deleteMany({ where: { id: { in: candidateIds }, projectId } });
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/candidates`);
 }
 
 export async function generateOutreachForATierAction(projectId: string) {

@@ -67,7 +67,19 @@ model Project {
   updatedAt DateTime @updatedAt
 
   candidates Candidate[]
-  feedback  ProjectFeedback?
+  feedback   ProjectFeedback?
+  documents  ProjectDocument[]
+}
+
+model ProjectDocument {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  filename      String
+  extractedText String
+  createdAt     DateTime @default(now())
+
+  @@index([projectId])
 }
 
 model Candidate {

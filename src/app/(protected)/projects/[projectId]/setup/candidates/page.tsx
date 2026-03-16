@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
-import SetupUploader from "./SetupUploader";
+import CandidateListUploader from "./CandidateListUploader";
 
-export default async function ProjectSetupPage({
+export default async function SetupCandidatesPage({
   params,
   searchParams,
 }: {
@@ -16,21 +16,17 @@ export default async function ProjectSetupPage({
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
-    select: {
-      name: true,
-      documents: { orderBy: { createdAt: "asc" }, select: { id: true, filename: true } },
-    },
+    select: { name: true },
   });
   if (!project) return notFound();
 
-  const nextUrl = next ?? `/projects/${projectId}/setup/candidates`;
+  const nextUrl = next ?? `/projects/${projectId}/setup/manual`;
 
   return (
-    <SetupUploader
+    <CandidateListUploader
       projectId={projectId}
       projectName={project.name}
       nextUrl={nextUrl}
-      existingDocs={project.documents}
     />
   );
 }

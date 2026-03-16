@@ -2,56 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
-import {
-  addCandidateAction,
-  clearAllCandidatesAction,
-  generateCandidatesAction,
-  researchCandidatesAction,
-  scoreAndTierProjectAction,
-  updateProjectAction,
-  uploadBrandDocumentAction,
-  uploadCandidatesCsvAction,
-} from "@/app/(protected)/projects/actions";
-import { parseExcludeList } from "@/lib/utils";
-import CandidateTable from "./CandidateTable";
-import SubmitButton from "@/components/SubmitButton";
+import { deleteProjectDocumentAction } from "@/app/(protected)/projects/actions";
 import ActionButton from "@/components/ActionButton";
 
-function completeness(p: {
-  brandCategory?: string | null;
-  productTypeSought?: string | null;
-  priceRange?: string | null;
-  distributionPreference?: string | null;
-  geography?: string | null;
-  positioningKeywords?: string | null;
-  constraints?: string | null;
-  brandBackground?: string | null;
-  brandWebsite?: string | null;
-}) {
-  const required = [
-    { key: "brandCategory", label: "Brand category" },
-    { key: "productTypeSought", label: "Product type sought" },
-    { key: "priceRange", label: "Price range" },
-    { key: "distributionPreference", label: "Distribution preference" },
-  ] as const;
-
-  const missing = required
-    .filter((r) => !(p as any)[r.key])
-    .map((r) => r.label);
-
-  const nice = [
-    { key: "geography", label: "Geography" },
-    { key: "positioningKeywords", label: "Positioning keywords" },
-    { key: "constraints", label: "Constraints" },
-    { key: "brandBackground", label: "Brand background" },
-    { key: "brandWebsite", label: "Brand website" },
-  ] as const;
-
-  const niceMissing = nice.filter((r) => !(p as any)[r.key]).map((r) => r.label);
-
-  const filled = required.length - missing.length;
-  const score = Math.round((filled / required.length) * 100);
-  return { score, missing, niceMissing };
+function Field({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div>
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="mt-1 text-sm text-slate-800">{value || <span className="italic text-slate-400">—</span>}</p>
+    </div>
+  );
 }
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ projectId: string }> }) {
@@ -61,271 +21,184 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
     include: {
-      candidates: {
-        orderBy: { createdAt: "asc" },
-        include: {
-          evidenceLinks: { orderBy: { createdAt: "desc" } },
-          scoreCard: true,
-          outreachDraft: true,
-          feedback: true,
-        },
-      },
+      documents: { orderBy: { createdAt: "asc" } },
+      candidates: { select: { id: true, provenance: true } },
     },
   });
   if (!project) return notFound();
 
-  const comp = completeness(project);
-  const exclude = parseExcludeList(project.excludeList);
+  const totalCandidates = project.candidates.length;
+  const byProvenance = {
+    uploaded: project.candidates.filter((c) => c.provenance === "uploaded").length,
+    generated: project.candidates.filter((c) => c.provenance === "generated").length,
+    manual: project.candidates.filter((c) => c.provenance === "manual").length,
+  };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">{project.name}</h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Intake → candidates → research → scoring → outreach drafts.
-          </p>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-3 rounded-full bg-gradient-to-r from-indigo-50 to-violet-50 px-4 py-2 ring-1 ring-indigo-200/50">
-              <span className="text-xs font-medium text-indigo-700">Completeness</span>
-              <div className="h-2 w-24 rounded-full bg-indigo-200/50">
-                <div className="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500" style={{ width: `${comp.score}%` }}></div>
-              </div>
-              <span className="text-xs font-semibold text-indigo-700">{comp.score}%</span>
-            </div>
-            {comp.missing.length > 0 && (
-              <span className="rounded-full bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-1.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200/50">
-                Missing: {comp.missing.join(", ")}
-              </span>
-            )}
-            {comp.niceMissing.length > 0 && (
-              <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
-                Optional: {comp.niceMissing.join(", ")}
-              </span>
-            )}
-          </div>
+          <p className="mt-1 text-sm text-slate-500">Project overview — review your setup before running research and scoring.</p>
         </div>
-
-        <div className="flex flex-col items-end gap-3">
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <Link
+            href={`/projects/${projectId}/candidates`}
+            className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98]"
+          >
+            Manage candidates →
+          </Link>
           <Link
             href={`/projects/${projectId}/results`}
-            className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/30 hover:brightness-110 active:scale-[0.98]"
+            className="text-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors"
           >
             View results
           </Link>
-          <Link href="/projects" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors duration-200 hover:bg-indigo-50 hover:text-indigo-700">
+          <Link href="/projects" className="text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors">
             Back to projects
           </Link>
         </div>
       </div>
 
-      {/* Intake */}
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-slate-900">Project intake</h2>
-          <p className="text-xs text-slate-500">Never hard-block; missing inputs reduce evidence level.</p>
-        </div>
-
-        <form action={updateProjectAction.bind(null, projectId)} className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
-          <label className="block md:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Project name</span>
-            <input name="name" defaultValue={project.name} className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">Brand category</span>
-            <input name="brandCategory" defaultValue={project.brandCategory ?? ""} className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">Brand website <span className="font-normal text-slate-400">(optional)</span></span>
-            <input name="brandWebsite" type="url" defaultValue={project.brandWebsite ?? ""} className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="https://www.yourbrand.com" />
-          </label>
-
-          <label className="block md:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Brand background <span className="font-normal text-slate-400">(optional)</span></span>
-            <textarea
-              name="brandBackground"
-              defaultValue={project.brandBackground ?? ""}
-              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-              rows={5}
-              placeholder="Brand history, positioning, series details, target demographics — the more context, the better the research quality."
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">Product type sought</span>
-            <input name="productTypeSought" defaultValue={project.productTypeSought ?? ""} className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">Price range</span>
-            <input name="priceRange" defaultValue={project.priceRange ?? ""} className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
-          </label>
-
-          <label className="block md:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Distribution preference</span>
-            <input
-              name="distributionPreference"
-              defaultValue={project.distributionPreference ?? ""}
-              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">Geography <span className="font-normal text-slate-400">(optional)</span></span>
-            <input name="geography" defaultValue={project.geography ?? ""} className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">Positioning keywords <span className="font-normal text-slate-400">(optional)</span></span>
-            <input
-              name="positioningKeywords"
-              defaultValue={project.positioningKeywords ?? ""}
-              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-            />
-          </label>
-
-          <label className="block md:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Constraints <span className="font-normal text-slate-400">(optional)</span></span>
-            <textarea
-              name="constraints"
-              defaultValue={project.constraints ?? ""}
-              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-              rows={3}
-            />
-          </label>
-
-          <label className="block md:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Exclude List <span className="font-normal text-slate-400">(one per line)</span></span>
-            <textarea
-              name="excludeList"
-              defaultValue={project.excludeList ?? ""}
-              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-              rows={4}
-            />
-            <p className="mt-2 text-xs text-slate-500">
-              Current exclude count: {exclude.length}. These companies will be filtered out of generated candidates.
-            </p>
-          </label>
-
-          <div className="md:col-span-2 flex items-center gap-4">
-            <SubmitButton label="Save intake" pendingLabel="Saving…" className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/30 hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Intake summary */}
+        <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-slate-900">Project intake</h2>
             <Link
-              href={`/projects/${projectId}/results`}
-              className="rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.98]"
+              href={`/projects/${projectId}/edit`}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
             >
-              View results
+              Edit intake
             </Link>
           </div>
-        </form>
-      </section>
-
-      {/* Candidate sourcing */}
-      <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm md:col-span-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-slate-900">Candidates</h2>
-            <div className="flex flex-wrap gap-2">
-              <ActionButton action={generateCandidatesAction.bind(null, projectId)} label="Generate (LLM)" pendingLabel="Generating…" className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
-              <ActionButton action={researchCandidatesAction.bind(null, projectId)} label="Research" pendingLabel="Researching…" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.98] disabled:opacity-50" />
-              <ActionButton action={scoreAndTierProjectAction.bind(null, projectId)} label="Score & Tier" pendingLabel="Scoring…" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.98] disabled:opacity-50" />
-              <Link
-                href={`/projects/${projectId}/results`}
-                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
-              >
-                Results
-              </Link>
-              {project.candidates.length > 0 && (
-                <ActionButton action={clearAllCandidatesAction.bind(null, projectId)} label="Clear all" pendingLabel="Clearing…" className="rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-600 shadow-sm transition-all duration-200 hover:border-red-300 hover:bg-red-50 active:scale-[0.98] disabled:opacity-50" />
-              )}
+          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Brand category" value={project.brandCategory} />
+            <Field label="Brand website" value={project.brandWebsite} />
+            <div className="sm:col-span-2">
+              <Field label="Brand background" value={project.brandBackground} />
             </div>
+            <Field label="Product types sought" value={project.productTypeSought} />
+            <Field label="Price range" value={project.priceRange} />
+            <div className="sm:col-span-2">
+              <Field label="Distribution preference" value={project.distributionPreference} />
+            </div>
+            <Field label="Geography" value={project.geography} />
+            <Field label="Positioning keywords" value={project.positioningKeywords} />
+            <div className="sm:col-span-2">
+              <Field label="Constraints" value={project.constraints} />
+            </div>
+            {project.excludeList && (
+              <div className="sm:col-span-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Exclude list</p>
+                <p className="mt-1 text-sm text-slate-800">
+                  {project.excludeList.split("\n").filter(Boolean).length} entries
+                </p>
+              </div>
+            )}
           </div>
+        </section>
 
-          <div className="mt-5">
-            <CandidateTable
-              candidates={project.candidates.map((c) => ({
-                id: c.id,
-                name: c.name,
-                website: c.website,
-                notes: c.notes,
-                customData: c.customData,
-                provenance: c.provenance,
-                evidenceLinks: c.evidenceLinks.map((l) => ({
-                  id: l.id,
-                  url: l.url,
-                  summaryJson: l.summaryJson,
-                })),
-                scoreCard: c.scoreCard
-                  ? { tier: c.scoreCard.tier, totalScore: c.scoreCard.totalScore }
-                  : null,
-              }))}
-              projectId={projectId}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-5">
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-900">Manual add</h3>
-            <form action={addCandidateAction.bind(null, projectId)} className="mt-4 space-y-3">
-              <input
-                name="name"
-                placeholder="Company name"
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                required
-              />
-              <input
-                name="website"
-                placeholder="Website (optional)"
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-              />
-              <textarea
-                name="notes"
-                placeholder="Notes (optional)"
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                rows={3}
-              />
-              <SubmitButton label="Add" pendingLabel="Adding…" className="w-full rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
-              <p className="text-xs text-slate-500">Exclude List is applied automatically.</p>
-            </form>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-900">Upload candidate list</h3>
-            <p className="mt-2 text-xs text-slate-500">CSV or Excel (.xlsx). Columns: name/company (required). Any additional columns will be preserved and used in scoring.</p>
-            <form action={uploadCandidatesCsvAction.bind(null, projectId)} className="mt-4 space-y-3">
-              <input type="file" name="file" accept=".csv,text/csv,.xlsx,.xls" className="w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100" required />
-              <SubmitButton label="Upload" pendingLabel="Uploading…" className="w-full rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
-            </form>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-900">Upload brand document</h3>
-            <p className="mt-2 text-xs text-slate-500">PDF, PPTX, DOCX, or TXT. Extracted text is included as ground-truth context in all LLM prompts for this project.</p>
+        <div className="space-y-6">
+          {/* Brand documents */}
+          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-slate-900">Brand documents</h2>
+              <Link
+                href={`/projects/${projectId}/setup?next=/projects/${projectId}`}
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-all duration-200 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
+              >
+                + Add more
+              </Link>
+            </div>
+            {project.documents.length === 0 ? (
+              <p className="mt-3 text-sm text-slate-400 italic">No documents uploaded. <Link href={`/projects/${projectId}/setup?next=/projects/${projectId}`} className="text-violet-600 hover:underline not-italic">Upload one →</Link></p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {project.documents.map((doc) => (
+                  <li key={doc.id} className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50 px-4 py-2.5">
+                    <svg className="h-4 w-4 text-violet-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="truncate text-sm text-slate-700">{doc.filename}</span>
+                    <span className="ml-auto shrink-0 text-xs text-slate-400">
+                      {doc.extractedText.length.toLocaleString()} chars
+                    </span>
+                    <ActionButton
+                      action={deleteProjectDocumentAction.bind(null, doc.id)}
+                      label="Remove"
+                      pendingLabel="…"
+                      className="shrink-0 text-xs text-red-400 hover:text-red-600 disabled:opacity-50"
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
             {project.brandContextText && (
-              <p className="mt-2 text-xs font-medium text-emerald-700">
-                Document loaded — {project.brandContextText.length.toLocaleString()} chars extracted.
+              <p className="mt-3 text-xs text-slate-400">
+                {project.brandContextText.length.toLocaleString()} chars of context injected into LLM prompts.
               </p>
             )}
-            <form action={uploadBrandDocumentAction.bind(null, projectId)} className="mt-4 space-y-3">
-              <input type="file" name="file" accept=".pdf,.pptx,.ppt,.docx,.txt" className="w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-violet-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-violet-700 hover:file:bg-violet-100" required />
-              <SubmitButton label="Upload document" pendingLabel="Extracting…" className="w-full rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-violet-500/25 transition-all duration-200 hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:opacity-50" />
-            </form>
-          </div>
+          </section>
 
-          <div className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50 to-orange-50 p-5 text-xs text-amber-900 shadow-sm">
-            <p className="font-semibold">Scoring reminder</p>
-            <ul className="mt-3 list-disc space-y-1.5 pl-5">
-              <li>Category + distribution weights = 60%</li>
-              <li>Licensing activity weight = 20%</li>
-              <li>Everything else combined = 20%</li>
-              <li>Category or distribution disqualifiers zero out that pillar (max ~40% score)</li>
-              <li>Hard disqualifiers automatically lock candidates into C-tier</li>
-            </ul>
-          </div>
+          {/* Candidates summary */}
+          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-slate-900">Candidates</h2>
+              <Link
+                href={`/projects/${projectId}/candidates`}
+                className="rounded-lg bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-110"
+              >
+                Manage →
+              </Link>
+            </div>
+            <div className="mt-4">
+              {totalCandidates === 0 ? (
+                <p className="text-sm text-slate-400 italic">No candidates yet.</p>
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold text-slate-900">{totalCandidates}</span>
+                  <span className="text-sm text-slate-500">total candidates</span>
+                </div>
+              )}
+              {totalCandidates > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {byProvenance.uploaded > 0 && (
+                    <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 ring-1 ring-indigo-200/50">
+                      {byProvenance.uploaded} uploaded
+                    </span>
+                  )}
+                  {byProvenance.generated > 0 && (
+                    <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700 ring-1 ring-violet-200/50">
+                      {byProvenance.generated} generated
+                    </span>
+                  )}
+                  {byProvenance.manual > 0 && (
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                      {byProvenance.manual} manual
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+              <Link
+                href={`/projects/${projectId}/setup/manual?next=/projects/${projectId}`}
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+              >
+                + Manual add
+              </Link>
+              <Link
+                href={`/projects/${projectId}/setup/candidates?next=/projects/${projectId}`}
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+              >
+                + Upload list
+              </Link>
+            </div>
+          </section>
         </div>
-      </section>
+      </div>
     </div>
   );
 }
