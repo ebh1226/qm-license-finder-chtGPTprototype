@@ -135,7 +135,7 @@ export function scoreCandidateUserPrompt(input: {
   scoreLines.push(
     "\nEvidence bullets (user-provided, link-supported):",
     ev,
-    "\nScoring criteria (0-5 each): categoryFit, distributionAlignment, recent licensing activity, scale appropriateness, quality/reputation, geo coverage, recent momentum, manufacturing capability.",
+    "\nScoring criteria (0-5 each, use these EXACT JSON field names): categoryFit, distributionAlignment, licensingActivity, scaleAppropriateness, qualityReputation, geoCoverage, recentMomentum, manufacturingCapability.",
     "Disqualifiers (use EXACT labels when applicable):",
     "  - 'distribution mismatch' — the candidate's distribution channels are fundamentally incompatible (e.g., mass market vs. specialty/premium). This is an automatic disqualifier that zeros the Distribution pillar.",
     "  - 'wrong category' — the candidate operates in a completely unrelated product category. This is an automatic disqualifier that zeros the Category pillar.",
