@@ -318,7 +318,7 @@ export async function clearAllCandidatesAction(projectId: string) {
 
 // Internal helper: research a single candidate (LLM knowledge + web search + evidence summarization)
 async function researchSingleCandidate(
-  candidate: { id: string; name: string; website: string | null; notes: string | null },
+  candidate: { id: string; name: string; website: string | null; notes: string | null; customData: string | null },
   projectContext: { brandCategory: string | null; productTypeSought: string | null; brandBackground?: string | null; brandWebsite?: string | null },
 ) {
   // --- PHASE 1: LLM Knowledge ---
@@ -363,11 +363,26 @@ async function researchSingleCandidate(
     500
   ) || null;
 
+  // Merge research.category into customData under "Category" key (only if not already set).
+  let updatedCustomData = candidate.customData;
+  if (research.category) {
+    try {
+      const existing = candidate.customData ? (JSON.parse(candidate.customData) as Record<string, string>) : {};
+      if (!existing["Category"]) {
+        existing["Category"] = research.category;
+        updatedCustomData = JSON.stringify(existing);
+      }
+    } catch {
+      updatedCustomData = JSON.stringify({ Category: research.category });
+    }
+  }
+
   await prisma.candidate.update({
     where: { id: candidate.id },
     data: {
       website: updatedWebsite,
       notes: updatedNotes,
+      customData: updatedCustomData,
     },
   });
 
