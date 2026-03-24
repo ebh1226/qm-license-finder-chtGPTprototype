@@ -177,7 +177,7 @@ export async function uploadBrandDocumentAction(projectId: string, formData: For
       // browser APIs (DOMMatrix) not available in Node.js 20.
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) throw new Error("No GEMINI_API_KEY configured");
-      const model = (process.env.GEMINI_MODEL || "gemini-2.0-flash").trim();
+      const model = (process.env.GEMINI_MODEL || "gemini-2.5-flash").trim();
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       const resp = await fetch(url, {
         method: "POST",

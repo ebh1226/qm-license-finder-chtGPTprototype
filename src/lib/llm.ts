@@ -253,7 +253,7 @@ async function geminiCall({
     return { provider: "mock", model: "mock", text: mockByPrompt(promptName) };
   }
 
-  const model = (process.env.GEMINI_MODEL || "gemini-2.0-flash").trim();
+  const model = (process.env.GEMINI_MODEL || "gemini-2.5-flash").trim();
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const body = {
