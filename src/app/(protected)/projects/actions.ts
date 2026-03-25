@@ -488,6 +488,27 @@ export async function researchCandidatesBatchAction(projectId: string, candidate
   revalidatePath(`/projects/${projectId}/candidates`);
 }
 
+export async function researchOneCandidateAction(projectId: string, candidateId: string) {
+  await requireAuth();
+
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { brandCategory: true, productTypeSought: true, brandBackground: true, brandWebsite: true },
+  });
+  if (!project) return;
+
+  const candidate = await prisma.candidate.findUnique({
+    where: { id: candidateId, projectId },
+    include: { evidenceLinks: true },
+  });
+  if (!candidate || !candidate.name.trim() || candidate.evidenceLinks.length > 0) return;
+
+  await researchSingleCandidate(candidate, project);
+
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/candidates`);
+}
+
 export async function generateCandidatesAction(projectId: string) {
   await requireAuth();
 
