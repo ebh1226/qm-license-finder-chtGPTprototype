@@ -6,7 +6,7 @@ Human‑in‑the‑loop *decision and prioritization* system for licensing partn
 
 **Explicit non‑goals:** not a marketplace, not a deal room, not a CRM, not a contact scraper, not an auto‑email sender.
 
-## What you can do in v0.1
+## What you can do in v0.1 ?
 
 - Create a **Project** (intake fields; never hard‑blocks; shows completeness + warnings).
 - Build a **Candidate** list via:
