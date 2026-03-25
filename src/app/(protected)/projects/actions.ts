@@ -371,59 +371,63 @@ async function researchSingleCandidate(
     },
   });
 
-  // --- PHASE 2: Web Search ---
-  const allUrls: Array<{ url: string; title: string }> = [];
-
-  for (const query of research.searchQueries.slice(0, 3)) {
-    await new Promise((r) => setTimeout(r, 500));
-    try {
-      const results = await googleCustomSearch(`${query} after:2022`, 2);
-      for (const r of results) {
-        const normalized = normalizeUrl(r.url);
-        if (normalized && !allUrls.some((u) => u.url === normalized)) {
-          allUrls.push({ url: normalized, title: r.title });
-        }
+  // --- PHASE 2: Web Search (parallel) ---
+  const searchResultArrays = await Promise.all(
+    research.searchQueries.slice(0, 3).map(async (query) => {
+      try {
+        return await googleCustomSearch(`${query} after:2022`, 2);
+      } catch (err) {
+        console.error(`Search failed for "${candidate.name}" query "${query}":`, err);
+        return [];
       }
-    } catch (err) {
-      console.error(`Search failed for "${candidate.name}" query "${query}":`, err);
+    })
+  );
+
+  const allUrls: Array<{ url: string; title: string }> = [];
+  for (const results of searchResultArrays) {
+    for (const r of results) {
+      const normalized = normalizeUrl(r.url);
+      if (normalized && !allUrls.some((u) => u.url === normalized)) {
+        allUrls.push({ url: normalized, title: r.title });
+      }
     }
   }
 
-  // --- PHASE 3: Fetch & Summarize evidence ---
-  for (const { url } of allUrls.slice(0, 3)) {
-    try {
-      const link = await prisma.evidenceLink.create({
-        data: { candidateId: candidate.id, url },
-        select: { id: true },
-      });
-
-      const fetched = await fetchPublicUrlText(url);
-      if (fetched.ok && fetched.text) {
-        const { data: summary } = await runStructured({
-          promptName: "evidence_summary",
-          system: systemPreamble(),
-          user: evidenceSummaryUserPrompt({ url, text: fetched.text, kind: "fetched" }),
-          schema: EvidenceSummarySchema,
+  // --- PHASE 3: Fetch & Summarize (parallel) ---
+  await Promise.all(
+    allUrls.slice(0, 3).map(async ({ url }) => {
+      try {
+        const link = await prisma.evidenceLink.create({
+          data: { candidateId: candidate.id, url },
+          select: { id: true },
         });
 
-        if (summary.bullets.length === 0) {
-          await prisma.evidenceLink.delete({ where: { id: link.id } });
-        } else {
-          await prisma.evidenceLink.update({
-            where: { id: link.id },
-            data: {
-              fetchedText: clampText(fetched.text, 12000),
-              summaryJson: JSON.stringify(summary.bullets),
-            },
+        const fetched = await fetchPublicUrlText(url);
+        if (fetched.ok && fetched.text) {
+          const { data: summary } = await runStructured({
+            promptName: "evidence_summary",
+            system: systemPreamble(),
+            user: evidenceSummaryUserPrompt({ url, text: fetched.text, kind: "fetched" }),
+            schema: EvidenceSummarySchema,
           });
-        }
-      }
 
-      await new Promise((r) => setTimeout(r, 1000));
-    } catch (err) {
-      console.error(`Evidence processing failed for "${candidate.name}" URL "${url}":`, err);
-    }
-  }
+          if (summary.bullets.length === 0) {
+            await prisma.evidenceLink.delete({ where: { id: link.id } });
+          } else {
+            await prisma.evidenceLink.update({
+              where: { id: link.id },
+              data: {
+                fetchedText: clampText(fetched.text, 12000),
+                summaryJson: JSON.stringify(summary.bullets),
+              },
+            });
+          }
+        }
+      } catch (err) {
+        console.error(`Evidence processing failed for "${candidate.name}" URL "${url}":`, err);
+      }
+    })
+  );
 }
 
 export async function researchCandidatesAction(projectId: string) {

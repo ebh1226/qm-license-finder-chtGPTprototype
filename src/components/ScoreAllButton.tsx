@@ -20,13 +20,20 @@ export default function ScoreAllButton({
 
   async function handleClick() {
     if (isRunning || candidateIds.length === 0) return;
-    setProgress({ done: 0, total: candidateIds.length });
-    for (let i = 0; i < candidateIds.length; i++) {
-      await scoreOneCandidateAction(projectId, candidateIds[i]);
-      setProgress({ done: i + 1, total: candidateIds.length });
+    const total = candidateIds.length;
+    let done = 0;
+    setProgress({ done: 0, total });
+
+    const BATCH = 3;
+    for (let i = 0; i < total; i += BATCH) {
+      const batch = candidateIds.slice(i, i + BATCH);
+      await Promise.all(batch.map((id) => scoreOneCandidateAction(projectId, id)));
+      done = Math.min(i + BATCH, total);
+      setProgress({ done, total });
       router.refresh();
     }
-    setProgress({ done: candidateIds.length, total: candidateIds.length, retiering: true });
+
+    setProgress({ done: total, total, retiering: true });
     await retierProjectAction(projectId);
     router.refresh();
     setProgress(null);

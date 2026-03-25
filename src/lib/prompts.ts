@@ -162,7 +162,7 @@ export function candidateResearchUserPrompt(input: {
     "Research the following company as a potential licensing partner.",
     "Return what you know about this company. Do NOT invent facts — only include information you are confident about.",
     "If you are not confident about a field, return null for that field.",
-    "Also suggest 1-3 Google search queries that would find useful public information about this company's licensing activity, partnerships, products, or distribution.",
+    "Also suggest 1-3 Google search queries to discover more about this company — their products, markets, recent news, company background, and what they are known for.",
     "",
     `Company name: ${input.candidateName}`,
     `Known website: ${input.candidateWebsite ?? "(none)"}`,
@@ -182,10 +182,11 @@ export function candidateResearchUserPrompt(input: {
 
 export function evidenceSummaryUserPrompt(input: { url: string; text: string; kind: "fetched" | "excerpt" }): string {
   return [
-    "Summarize the evidence text into 1-4 short bullets relevant to licensing partner fit.",
-    "If the page contains no useful information about the company or licensing, return an empty bullets array.",
-    "If the content appears to be from before 2022 (check publication dates, article dates, or copyright years visible in the text), return an empty bullets array — outdated evidence is not useful.",
-    "Do NOT add any facts not in the evidence text.",
+    "Extract 1-4 short informational bullets about this company from the page.",
+    "Focus on: what they make, their markets, recent news, company background, partnerships, distribution, or anything useful to understand who they are.",
+    "If the page contains no useful information about the company itself, return an empty bullets array.",
+    "If the content appears to be from before 2022 (check publication dates, article dates, or copyright years visible in the text), return an empty bullets array — outdated content is not useful.",
+    "Do NOT add any facts not present in the page text.",
     "Return JSON only.",
     `\nEvidence URL: ${input.url}`,
     `Evidence kind: ${input.kind}`,
