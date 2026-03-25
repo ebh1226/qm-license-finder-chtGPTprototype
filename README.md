@@ -1,4 +1,4 @@
-# QM License Finder — Prototype v0.1 - Authored by MAP
+# QM License Finder — Prototype v0.1 - Authored by MyAiPathways
 
 Human‑in‑the‑loop *decision and prioritization* system for licensing partner identification:
 
