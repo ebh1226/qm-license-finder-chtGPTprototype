@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import {
   generateCandidatesAction,
-  scoreAndTierCandidatesBatchAction,
   clearAllCandidatesAction,
   addCandidateAction,
   uploadCandidatesCsvAction,
@@ -12,6 +11,7 @@ import {
 } from "@/app/(protected)/projects/actions";
 import ActionButton from "@/components/ActionButton";
 import ResearchAllButton from "@/components/ResearchAllButton";
+import ScoreAllButton from "@/components/ScoreAllButton";
 import SubmitButton from "@/components/SubmitButton";
 import CandidateTable from "../CandidateTable";
 import CandidatesBulkUploader from "./CandidatesBulkUploader";
@@ -76,10 +76,9 @@ export default async function CandidatesPage({ params }: { params: Promise<{ pro
           candidateIds={allIds}
           className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.98] disabled:opacity-50"
         />
-        <ActionButton
-          action={scoreAndTierCandidatesBatchAction.bind(null, projectId, allIds)}
-          label="3. Score & tier all"
-          pendingLabel="Scoring…"
+        <ScoreAllButton
+          projectId={projectId}
+          candidateIds={allIds}
           className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.98] disabled:opacity-50"
         />
         <div className="ml-auto">

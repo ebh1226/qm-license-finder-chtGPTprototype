@@ -838,6 +838,38 @@ export async function scoreAndTierCandidatesBatchAction(projectId: string, candi
   revalidatePath(`/projects/${projectId}/results`);
 }
 
+export async function scoreOneCandidateAction(projectId: string, candidateId: string) {
+  await requireAuth();
+
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: {
+      brandCategory: true, productTypeSought: true, priceRange: true,
+      distributionPreference: true, geography: true, positioningKeywords: true, constraints: true,
+      brandBackground: true, brandWebsite: true, brandContextText: true,
+    },
+  });
+  if (!project) return;
+
+  const candidate = await prisma.candidate.findUnique({
+    where: { id: candidateId, projectId },
+    include: { evidenceLinks: true },
+  });
+  if (!candidate) return;
+
+  await scoreSingleCandidate(candidate, project);
+
+  revalidatePath(`/projects/${projectId}/candidates`);
+}
+
+export async function retierProjectAction(projectId: string) {
+  await requireAuth();
+  await retierProject(projectId);
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/candidates`);
+  revalidatePath(`/projects/${projectId}/results`);
+}
+
 export async function deleteCandidatesBatchAction(projectId: string, candidateIds: string[]) {
   await requireAuth();
   if (!candidateIds.length) return;
